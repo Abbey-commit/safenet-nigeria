@@ -1,0 +1,885 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SafeNet Nigeria — Phase 1 Intelligence Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:       #07090D;
+    --surface:  #0C1018;
+    --surface2: #121820;
+    --border:   rgba(255,255,255,0.06);
+    --border2:  rgba(255,255,255,0.11);
+    --text:     #E8EEFF;
+    --text2:    #7A8BAA;
+    --text3:    #394558;
+    --red:      #FF4D4D;
+    --amber:    #FFB830;
+    --green:    #3CB371;
+    --blue:     #3B9EFF;
+    --nigeria:  #008751;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Barlow', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  /* Grain overlay */
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+    pointer-events: none; z-index: 9999;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(0,135,81,0.08) 0%, transparent 100%);
+    padding: 0 28px;
+    display: flex; align-items: center; gap: 20px;
+    height: 58px;
+    position: sticky; top: 0; z-index: 100;
+    backdrop-filter: blur(20px);
+  }
+  .logo {
+    display: flex; align-items: center; gap: 10px;
+  }
+  .logo-mark {
+    width: 32px; height: 32px; background: var(--nigeria);
+    border-radius: 8px; display: flex; align-items: center;
+    justify-content: center; font-family: 'Space Mono', monospace;
+    font-size: 12px; font-weight: 700; color: white;
+    flex-shrink: 0;
+  }
+  .logo-text {
+    font-size: 16px; font-weight: 700; letter-spacing: .03em;
+  }
+  .logo-text span { color: var(--nigeria); }
+  .header-meta {
+    margin-left: auto; display: flex; align-items: center; gap: 16px;
+  }
+  .live-badge {
+    display: flex; align-items: center; gap: 6px;
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: var(--green); padding: 4px 10px; border-radius: 20px;
+    background: rgba(60,179,113,0.1); border: 1px solid rgba(60,179,113,0.2);
+  }
+  .live-dot {
+    width: 5px; height: 5px; border-radius: 50%;
+    background: var(--green); animation: pulse 2s infinite;
+  }
+  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.2} }
+  .gen-time {
+    font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3);
+  }
+
+  /* ── LAYOUT ── */
+  .content { padding: 24px 28px; }
+
+  .page-title {
+    font-size: 13px; font-weight: 500;
+    color: var(--text2); text-transform: uppercase;
+    letter-spacing: .1em; margin-bottom: 20px;
+    font-family: 'Space Mono', monospace;
+  }
+  .page-title span { color: var(--amber); }
+
+  /* ── STAT ROW ── */
+  .stat-row {
+    display: grid; grid-template-columns: repeat(4, 1fr);
+    gap: 14px; margin-bottom: 22px;
+  }
+  .stat-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; padding: 16px 18px;
+    position: relative; overflow: hidden;
+  }
+  .stat-card::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0;
+    height: 2px; border-radius: 12px 12px 0 0;
+  }
+  .sc-red::before   { background: var(--red); }
+  .sc-amber::before { background: var(--amber); }
+  .sc-green::before { background: var(--green); }
+  .sc-blue::before  { background: var(--blue); }
+  .stat-label {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: var(--text3); text-transform: uppercase; letter-spacing: .07em;
+    margin-bottom: 8px;
+  }
+  .stat-num {
+    font-size: 32px; font-weight: 700; letter-spacing: -.02em;
+    line-height: 1;
+  }
+  .sc-red .stat-num   { color: var(--red); }
+  .sc-amber .stat-num { color: var(--amber); }
+  .sc-green .stat-num { color: var(--green); }
+  .sc-blue .stat-num  { color: var(--blue); }
+  .stat-sub {
+    font-size: 11px; color: var(--text3); margin-top: 5px;
+  }
+
+  /* ── PANELS ── */
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+  .grid-map { display: grid; grid-template-columns: 240px 1fr; gap: 16px; margin-bottom: 16px; }
+
+  .panel {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .panel-head {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 13px 18px; border-bottom: 1px solid var(--border);
+  }
+  .panel-title {
+    font-size: 12px; font-weight: 600; color: var(--text);
+    letter-spacing: .03em; display: flex; align-items: center; gap: 8px;
+  }
+  .panel-badge {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    padding: 2px 7px; border-radius: 20px;
+  }
+  .pb-red   { background:rgba(255,77,77,.12);   color:var(--red);   border:1px solid rgba(255,77,77,.2);   }
+  .pb-amber { background:rgba(255,184,48,.12);  color:var(--amber); border:1px solid rgba(255,184,48,.2);  }
+  .pb-green { background:rgba(60,179,113,.12);  color:var(--green); border:1px solid rgba(60,179,113,.2);  }
+  .panel-meta {
+    font-family: 'Space Mono', monospace; font-size: 10px; color: var(--text3);
+  }
+
+  /* ── ZONE CARDS ── */
+  .zones-wrap { padding: 14px 18px; display: flex; flex-direction: column; gap: 10px; }
+  .zone-card {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 10px 12px;
+  }
+  .zone-head {
+    display: flex; justify-content: space-between; align-items: center;
+    margin-bottom: 6px;
+  }
+  .zone-name { font-size: 12px; font-weight: 600; }
+  .trend-badge { font-size: 10px; font-weight: 600; letter-spacing: .03em; }
+  .zone-bar-wrap {
+    height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; margin-bottom: 6px;
+  }
+  .zone-bar { height: 100%; border-radius: 2px; transition: width .5s; }
+  .zone-stats {
+    display: flex; gap: 10px; font-size: 10px; color: var(--text2);
+    font-family: 'Space Mono', monospace;
+  }
+  .zone-actor {
+    font-size: 10px; color: var(--text3); margin-top: 4px;
+    font-style: italic;
+  }
+
+  /* ── ALERT FEED ── */
+  .alerts-wrap { display: flex; flex-direction: column; }
+  .alert-row {
+    display: flex; align-items: flex-start; gap: 12px;
+    padding: 12px 18px; border-bottom: 1px solid var(--border);
+    transition: background .15s; cursor: pointer;
+  }
+  .alert-row:hover { background: var(--surface2); }
+  .alert-row:last-child { border-bottom: none; }
+  .sev-pill {
+    font-family: 'Space Mono', monospace; font-size: 9px;
+    padding: 3px 7px; border-radius: 4px; border: 1px solid;
+    flex-shrink: 0; margin-top: 2px; font-weight: 700;
+    letter-spacing: .06em; white-space: nowrap;
+  }
+  .alert-info { flex: 1; min-width: 0; }
+  .alert-title { font-size: 12px; font-weight: 600; margin-bottom: 2px; }
+  .alert-sub {
+    font-size: 11px; color: var(--text2);
+    font-family: 'Space Mono', monospace; margin-bottom: 3px;
+  }
+  .alert-note { font-size: 11px; color: var(--text3); font-style: italic; }
+  .score-badge {
+    border: 1px solid; border-radius: 8px;
+    padding: 4px 8px; text-align: center; flex-shrink: 0;
+    min-width: 52px;
+  }
+
+  /* ── STATE BARS ── */
+  .states-wrap { padding: 14px 18px; display: flex; flex-direction: column; gap: 7px; }
+  .state-row { display: flex; align-items: center; gap: 10px; }
+  .state-name {
+    font-size: 11px; color: var(--text2);
+    font-family: 'Space Mono', monospace; width: 88px; flex-shrink: 0;
+  }
+  .state-bar-wrap {
+    flex: 1; height: 5px; background: var(--border); border-radius: 3px; overflow: hidden;
+  }
+  .state-bar { height: 100%; border-radius: 3px; }
+  .state-score {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    font-weight: 700; width: 32px; text-align: right; flex-shrink: 0;
+  }
+
+  /* ── EVENT TYPES ── */
+  .et-wrap { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .et-row { display: flex; align-items: center; gap: 8px; }
+  .et-dot { width: 7px; height: 7px; border-radius: 50%; flex-shrink: 0; }
+  .et-label { font-size: 11px; color: var(--text2); flex: 1; }
+  .et-bar-wrap {
+    width: 80px; height: 4px; background: var(--border);
+    border-radius: 2px; overflow: hidden; flex-shrink: 0;
+  }
+  .et-bar { height: 100%; border-radius: 2px; }
+  .et-pct {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: var(--text3); width: 28px; text-align: right;
+  }
+
+  /* ── ACTORS ── */
+  .actors-wrap { padding: 14px 18px; display: flex; flex-direction: column; gap: 8px; }
+  .actor-row { display: flex; align-items: center; gap: 8px; }
+  .actor-name { font-size: 11px; color: var(--text2); flex: 1; min-width: 0;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .actor-bar-wrap {
+    width: 70px; height: 5px; background: var(--border);
+    border-radius: 3px; overflow: hidden; flex-shrink: 0;
+  }
+  .actor-bar { height: 100%; border-radius: 3px; background: var(--red); opacity: .7; }
+  .actor-count {
+    font-family: 'Space Mono', monospace; font-size: 11px;
+    color: var(--text3); width: 24px; text-align: right;
+  }
+
+  /* ── MAP ── */
+  .map-wrap { padding: 12px 14px; }
+
+  /* ── TIMESERIES ── */
+  .ts-wrap { padding: 14px 18px; }
+  .ts-label {
+    font-family: 'Space Mono', monospace; font-size: 10px;
+    color: var(--text3); margin-bottom: 8px;
+  }
+
+  /* ── ETL LOG ── */
+  .log-wrap { padding: 12px 18px; display: flex; flex-direction: column; gap: 7px; }
+  .log-row {
+    display: flex; gap: 16px; align-items: center;
+    padding: 6px 0; border-bottom: 1px solid var(--border);
+  }
+  .log-row:last-child { border-bottom: none; }
+
+  /* ── PSYCH NOTE ── */
+  .psych-note {
+    background: rgba(59,158,255,0.05);
+    border: 1px solid rgba(59,158,255,0.15);
+    border-radius: 8px; padding: 10px 14px;
+    font-size: 11px; color: var(--text2);
+    font-style: italic; line-height: 1.6; margin: 14px 0 0;
+  }
+  .psych-note strong { color: var(--blue); font-style: normal; }
+
+  /* ── SCROLLBAR ── */
+  ::-webkit-scrollbar { width: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+  /* ── ANIMATIONS ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .panel { animation: fadeUp .5s ease both; }
+  .stat-card { animation: fadeUp .4s ease both; }
+  .stat-card:nth-child(1){animation-delay:.05s}
+  .stat-card:nth-child(2){animation-delay:.1s}
+  .stat-card:nth-child(3){animation-delay:.15s}
+  .stat-card:nth-child(4){animation-delay:.2s}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header class="header">
+  <div class="logo">
+    <div class="logo-mark">SN</div>
+    <div class="logo-text">Safe<span>Net</span> Nigeria</div>
+  </div>
+  <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;padding:3px 10px;border:1px solid var(--border);border-radius:6px">PHASE 1 · CONFLICT INTELLIGENCE</span>
+  <div class="header-meta">
+    <div class="live-badge"><div class="live-dot"></div> PIPELINE ACTIVE</div>
+    <div class="gen-time">Generated 2026-07-30 21:13:43 WAT</div>
+  </div>
+</header>
+
+<!-- CONTENT -->
+<main class="content">
+  <div class="page-title">Nigeria Security Intelligence Dashboard · <span>90-Day Analysis Window</span></div>
+
+  <!-- STAT CARDS -->
+  <div class="stat-row">
+    <div class="stat-card sc-red">
+      <div class="stat-label">Total Events</div>
+      <div class="stat-num">403</div>
+      <div class="stat-sub">Last 90 days · all zones</div>
+    </div>
+    <div class="stat-card sc-red">
+      <div class="stat-label">Critical Incidents</div>
+      <div class="stat-num">179</div>
+      <div class="stat-sub">Battles + bombings</div>
+    </div>
+    <div class="stat-card sc-amber">
+      <div class="stat-label">Confirmed Fatalities</div>
+      <div class="stat-num">496</div>
+      <div class="stat-sub">Human cost — not just a number</div>
+    </div>
+    <div class="stat-card sc-green">
+      <div class="stat-label">States Affected</div>
+      <div class="stat-num">35</div>
+      <div class="stat-sub">Across all 6 geopolitical zones</div>
+    </div>
+  </div>
+
+  <!-- MAP + ZONE RISK -->
+  <div class="grid-map">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">🗺️ Zone Risk Map</div>
+        <div class="panel-meta">Avg threat score</div>
+      </div>
+      <div class="map-wrap"><svg viewBox="0 0 260 260" xmlns="http://www.w3.org/2000/svg" width="100%" height="100%">
+      <rect width="260" height="260" fill="transparent"/>
+      
+        <rect x="30" y="10" width="100" height="75" rx="6"
+              fill="#FF4D4D" fill-opacity="0.41"
+              stroke="#FF4D4D" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="80" y="41" text-anchor="middle"
+              font-size="9" font-weight="600" fill="white" font-family="monospace">N.west</text>
+        <text x="80" y="55" text-anchor="middle"
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">16.7</text>
+        
+        <rect x="138" y="10" width="112" height="75" rx="6"
+              fill="#FF6B35" fill-opacity="0.41"
+              stroke="#FF6B35" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="194" y="41" text-anchor="middle"
+              font-size="9" font-weight="600" fill="white" font-family="monospace">N.east</text>
+        <text x="194" y="55" text-anchor="middle"
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">16.9</text>
+        
+        <rect x="50" y="93" width="130" height="70" rx="6"
+              fill="#FFB830" fill-opacity="0.41"
+              stroke="#FFB830" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="115" y="122" text-anchor="middle"
+              font-size="9" font-weight="600" fill="white" font-family="monospace">N.Central</text>
+        <text x="115" y="136" text-anchor="middle"
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">17.5</text>
+        
+        <rect x="10" y="170" width="95" height="75" rx="6"
+              fill="#3CB371" fill-opacity="0.36"
+              stroke="#3CB371" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="57" y="201" text-anchor="middle"
+              font-size="9" font-weight="600" fill="white" font-family="monospace">S.West</text>
+        <text x="57" y="215" text-anchor="middle"
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">9.3</text>
+        
+        <rect x="112" y="170" width="80" height="75" rx="6"
+              fill="#FFD700" fill-opacity="0.37"
+              stroke="#FFD700" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="152" y="201" text-anchor="middle"
+              font-size="9" font-weight="600" fill="white" font-family="monospace">S.S.</text>
+        <text x="152" y="215" text-anchor="middle"
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">10.1</text>
+        
+        <rect x="198" y="170" width="54" height="75" rx="6"
+              fill="#90EE90" fill-opacity="0.39"
+              stroke="#90EE90" stroke-opacity="0.6" stroke-width="1.5"/>
+        <text x="225" y="201" text-anchor="middle"
+              font-size="9" font-weight="600" fill="white" font-family="monospace">S.East</text>
+        <text x="225" y="215" text-anchor="middle"
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">13.7</text>
+        
+      <text x="130" y="252" text-anchor="middle" font-size="8"
+            fill="rgba(255,255,255,0.4)" font-family="monospace">Avg. threat score by zone</text>
+    </svg></div>
+      <div class="psych-note">
+        <strong>Design note:</strong> Colour intensity scales with threat score, not raw event count.
+        High-fatality low-frequency zones are not underweighted — protecting against
+        "psychic numbing" (Slovic, 2007).
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">6 ZONES</span></div>
+        <div class="panel-meta">Sorted by risk score</div>
+      </div>
+      <div class="zones-wrap">
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">Northeast</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:16.9%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>121 events</span>
+            <span style="color:#FF4D4D">75 critical</span>
+            <span>64 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">16.9%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>ISWAP</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">Northwest</span>
+            <span class="trend-badge" style="color:#4CAF50">↓ DECLINING</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:16.6%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>141 events</span>
+            <span style="color:#FF4D4D">67 critical</span>
+            <span>317 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">16.6%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Military Forces of Nigeria</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">NorthCentral</span>
+            <span class="trend-badge" style="color:#FF4D4D">↑ RISING</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:16.5%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>81 events</span>
+            <span style="color:#FF4D4D">23 critical</span>
+            <span>73 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">16.5%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Farmers/Herders</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">SouthEast</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:14.3%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>16 events</span>
+            <span style="color:#FF4D4D">5 critical</span>
+            <span>8 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">14.3%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Unknown Armed Group</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">SouthSouth</span>
+            <span class="trend-badge" style="color:#FF4D4D">↑ RISING</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:11.8%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>32 events</span>
+            <span style="color:#FF4D4D">7 critical</span>
+            <span>30 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">11.8%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Unknown Armed Group</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">SouthWest</span>
+            <span class="trend-badge" style="color:#FF4D4D">↑ RISING</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:9.9%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>12 events</span>
+            <span style="color:#FF4D4D">2 critical</span>
+            <span>4 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">9.9%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Protesters</em></div>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- ALERT FEED + STATE BARS -->
+  <div class="grid-2">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">🚨 Highest Threat Events <span class="panel-badge pb-red">TOP 8</span></div>
+        <div class="panel-meta">Score = recency × severity × impact</div>
+      </div>
+      <div class="alerts-wrap">
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Bombing or IED — Kogi, NorthCentral</div>
+            <div class="alert-sub">Unknown Armed Group · Today · 0 fatalities</div>
+            <div class="alert-note">IED detonated on rural road in Kogi. Unknown Armed Group implicated.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">70</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Armed confrontation — Edo, SouthSouth</div>
+            <div class="alert-sub">Nigerian Police Force · 1d ago · 0 fatalities</div>
+            <div class="alert-note">Gun battle involving Nigerian Police Force near farmland in Edo.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">68</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Bombing or IED — Zamfara, Northwest</div>
+            <div class="alert-sub">Military Forces of Nigeria · 1d ago · 0 fatalities</div>
+            <div class="alert-note">Bombing in Zamfara attributed to Military Forces of Nigeria.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">68</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Armed confrontation — Sokoto, Northwest</div>
+            <div class="alert-sub">Military Forces of Nigeria · 2d ago · 0 fatalities</div>
+            <div class="alert-note">Armed clash between Military Forces of Nigeria and security forces in Sokoto.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">65</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Armed confrontation — Zamfara, Northwest</div>
+            <div class="alert-sub">Military Forces of Nigeria · 4d ago · 0 fatalities</div>
+            <div class="alert-note">Armed clash between Military Forces of Nigeria and security forces in Zamfara.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">61</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Armed confrontation — Niger, Northwest</div>
+            <div class="alert-sub">Unknown Armed Group · 9d ago · 3 fatalities</div>
+            <div class="alert-note">Gun battle involving Unknown Armed Group near farmland in Niger.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">60</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Armed confrontation — Bauchi, Northeast</div>
+            <div class="alert-sub">ISWAP · 7d ago · 1 fatalities</div>
+            <div class="alert-note">Armed clash between ISWAP and security forces in Bauchi.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">60</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">Armed confrontation — Adamawa, Northeast</div>
+            <div class="alert-sub">Unknown Armed Group · 5d ago · 0 fatalities</div>
+            <div class="alert-note">Armed clash between Unknown Armed Group and security forces in Adamawa.</div>
+          </div>
+          <div class="score-badge" style="border-color:#FF4D4D66">
+            <span style="color:#FF4D4D;font-size:18px;font-weight:700">59</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+          </div>
+        </div></div>
+      <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
+        <strong>Human labels:</strong> Analysts see "Armed confrontation" not "Battles" —
+        clinical distance increases error rate under stress (Klein, 1998).
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">📍 Top 10 Threat States</div>
+        <div class="panel-meta">Avg threat score</div>
+      </div>
+      <div class="states-wrap">
+        <div class="state-row">
+          <span class="state-name">Anambra</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:30.13%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">30.1</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Kogi</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:27.75%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">27.8</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Bauchi</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:23.8%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">23.8</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Zamfara</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:22.31%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">22.3</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Cross River</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:21.29%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">21.3</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">FCT</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:20.62%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">20.6</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Jigawa</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:18.38%;background:#4CAF50"></div>
+          </div>
+          <span class="state-score" style="color:#4CAF50">18.4</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Kwara</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:17.58%;background:#4CAF50"></div>
+          </div>
+          <span class="state-score" style="color:#4CAF50">17.6</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Katsina</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:17.48%;background:#4CAF50"></div>
+          </div>
+          <span class="state-score" style="color:#4CAF50">17.5</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Abia</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:17.37%;background:#4CAF50"></div>
+          </div>
+          <span class="state-score" style="color:#4CAF50">17.4</span>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- TIMESERIES + EVENT TYPES + ACTORS -->
+  <div class="grid-3">
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">📈 30-Day Event Trend</div>
+      </div>
+      <div class="ts-wrap">
+        <div class="ts-label">Daily conflict events — amber=total, red dashed=critical</div>
+        <svg viewBox="0 0 500 80" xmlns="http://www.w3.org/2000/svg" width="100%">
+      <defs>
+        <linearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#FFB830" stop-opacity="0.35"/>
+          <stop offset="100%" stop-color="#FFB830" stop-opacity="0.02"/>
+        </linearGradient>
+      </defs>
+      <path d="M 8 72 L 8.0,36.4 L 24.1,50.7 L 40.3,29.3 L 56.4,50.7 L 72.5,57.8 L 88.7,36.4 L 104.8,64.9 L 120.9,43.6 L 137.1,22.2 L 153.2,29.3 L 169.3,43.6 L 185.5,50.7 L 201.6,36.4 L 217.7,57.8 L 233.9,57.8 L 250.0,8.0 L 266.1,43.6 L 282.3,36.4 L 298.4,22.2 L 314.5,57.8 L 330.7,43.6 L 346.8,15.1 L 362.9,36.4 L 379.1,43.6 L 395.2,36.4 L 411.3,29.3 L 427.5,50.7 L 443.6,64.9 L 459.7,50.7 L 475.9,50.7 L 492.0,64.9 L 492.0 72 Z" fill="url(#areaGrad)"/>
+      <polyline points="8.0,36.4 24.1,50.7 40.3,29.3 56.4,50.7 72.5,57.8 88.7,36.4 104.8,64.9 120.9,43.6 137.1,22.2 153.2,29.3 169.3,43.6 185.5,50.7 201.6,36.4 217.7,57.8 233.9,57.8 250.0,8.0 266.1,43.6 282.3,36.4 298.4,22.2 314.5,57.8 330.7,43.6 346.8,15.1 362.9,36.4 379.1,43.6 395.2,36.4 411.3,29.3 427.5,50.7 443.6,64.9 459.7,50.7 475.9,50.7 492.0,64.9" fill="none" stroke="#FFB830" stroke-width="1.5" stroke-linejoin="round"/>
+      <polyline points="8.0,57.8 24.1,57.8 40.3,43.6 56.4,64.9 72.5,72.0 88.7,64.9 104.8,64.9 120.9,57.8 137.1,72.0 153.2,57.8 169.3,64.9 185.5,64.9 201.6,50.7 217.7,64.9 233.9,64.9 250.0,43.6 266.1,64.9 282.3,50.7 298.4,36.4 314.5,64.9 330.7,43.6 346.8,57.8 362.9,57.8 379.1,50.7 395.2,50.7 411.3,57.8 427.5,64.9 443.6,72.0 459.7,64.9 475.9,57.8 492.0,64.9" fill="none" stroke="#FF4D4D" stroke-width="1" stroke-dasharray="3,2" stroke-linejoin="round"/>
+      <text x="4" y="12" font-size="8" fill="rgba(255,255,255,0.4)" font-family="monospace">All events</text>
+      <text x="4" y="22" font-size="8" fill="rgba(255,77,77,0.7)" font-family="monospace">── Critical</text>
+    </svg>
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">🔖 Incident Type Breakdown</div>
+      </div>
+      <div class="et-wrap">
+        <div class="et-row">
+          <span class="et-dot" style="background:#FF4D4D"></span>
+          <span class="et-label">Armed confrontation</span>
+          <span class="et-bar-wrap"><div class="et-bar" style="width:32%;background:#FF4D4D"></div></span>
+          <span class="et-pct">32%</span>
+        </div>
+        <div class="et-row">
+          <span class="et-dot" style="background:#FF8C42"></span>
+          <span class="et-label">Civilian attack</span>
+          <span class="et-bar-wrap"><div class="et-bar" style="width:29%;background:#FF8C42"></div></span>
+          <span class="et-pct">29%</span>
+        </div>
+        <div class="et-row">
+          <span class="et-dot" style="background:#FFB830"></span>
+          <span class="et-label">Intelligence signal</span>
+          <span class="et-bar-wrap"><div class="et-bar" style="width:15%;background:#FFB830"></div></span>
+          <span class="et-pct">15%</span>
+        </div>
+        <div class="et-row">
+          <span class="et-dot" style="background:#3B9EFF"></span>
+          <span class="et-label">Bombing or IED</span>
+          <span class="et-bar-wrap"><div class="et-bar" style="width:12%;background:#3B9EFF"></div></span>
+          <span class="et-pct">12%</span>
+        </div>
+        <div class="et-row">
+          <span class="et-dot" style="background:#A855F7"></span>
+          <span class="et-label">Civil unrest</span>
+          <span class="et-bar-wrap"><div class="et-bar" style="width:12%;background:#A855F7"></div></span>
+          <span class="et-pct">12%</span>
+        </div></div>
+    </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">⚔️ Most Active Non-State Actors</div>
+        <div class="panel-meta">Excludes security forces</div>
+      </div>
+      <div class="actors-wrap">
+        <div class="actor-row">
+          <span class="actor-name">Unknown Armed Group</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:100%"></div>
+          </div>
+          <span class="actor-count">86</span>
+        </div>
+        <div class="actor-row">
+          <span class="actor-name">ISWAP</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:33%"></div>
+          </div>
+          <span class="actor-count">28</span>
+        </div>
+        <div class="actor-row">
+          <span class="actor-name">CJTF (Civilian Joint Task Force)</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:30%"></div>
+          </div>
+          <span class="actor-count">26</span>
+        </div>
+        <div class="actor-row">
+          <span class="actor-name">Yan Daba</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:26%"></div>
+          </div>
+          <span class="actor-count">22</span>
+        </div>
+        <div class="actor-row">
+          <span class="actor-name">Yan Bindiga</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:26%"></div>
+          </div>
+          <span class="actor-count">22</span>
+        </div>
+        <div class="actor-row">
+          <span class="actor-name">Farmers/Herders</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:26%"></div>
+          </div>
+          <span class="actor-count">22</span>
+        </div></div>
+    </div>
+  </div>
+
+  <!-- ETL AUDIT LOG -->
+  <div class="panel">
+    <div class="panel-head">
+      <div class="panel-title">🔧 ETL Pipeline Audit Log <span class="panel-badge pb-green">TRANSPARENT</span></div>
+      <div class="panel-meta" style="font-style:italic;color:var(--text3)">Every data run is recorded — immutable audit trail</div>
+    </div>
+    <div class="log-wrap">
+        <div class="log-row">
+          <span style="color:rgba(255,255,255,0.4);font-size:11px">2026-07-30 21:13</span>
+          <span style="font-size:11px">full_refresh</span>
+          <span style="font-size:11px">403 fetched</span>
+          <span style="color:#4CAF50;font-size:11px;font-weight:600">SUCCESS</span>
+          <span style="color:rgba(255,255,255,0.4);font-size:11px">0.36s</span>
+        </div></div>
+    <div class="psych-note" style="margin:12px 18px;border-radius:8px">
+      <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts
+      builds appropriate trust in the data — neither over-reliance nor dismissal.
+      Automation bias (Parasuraman & Manzey, 2010) is reduced when humans can see
+      how the intelligence was produced.
+    </div>
+  </div>
+
+</main>
+
+<script>
+  // Live clock
+  function updateClock() {
+    var el = document.querySelector('.gen-time');
+    if (el) {
+      var d = new Date();
+      var h = String(d.getHours()).padStart(2,'0');
+      var m = String(d.getMinutes()).padStart(2,'0');
+      var s = String(d.getSeconds()).padStart(2,'0');
+      el.textContent = 'Live: ' + h + ':' + m + ':' + s + ' WAT';
+    }
+  }
+  setInterval(updateClock, 1000); updateClock();
+
+  // Filter by severity
+  document.querySelectorAll('.alert-row').forEach(function(row) {
+    row.addEventListener('click', function() {
+      this.style.outline = '1px solid rgba(255,184,48,0.4)';
+      setTimeout(function(){ row.style.outline=''; }, 1200);
+    });
+  });
+</script>
+</body>
+</html>
