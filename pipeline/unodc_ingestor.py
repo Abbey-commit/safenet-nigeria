@@ -152,31 +152,45 @@ class UNODCIngestor:
 
     def _fetch_live(self, years_back: int) -> pd.DataFrame:
         """
-        Fetches from UNODC data portal.
-        UNODC provides CSV downloads — we parse them directly.
+        Fetches from UNODC data portal using their CSV endpoint.
+        More stable than Excel file downloads.
         """
         print("[UNODCIngestor] Fetching live UNODC data for Nigeria...")
 
-        # UNODC homicide dataset — most reliable Nigeria data
+        # UNODC homicide CSV — most stable endpoint
         url = (
             "https://dataunodc.un.org/sites/dataunodc.un.org/files/"
-            "data_cts_intentional_homicide.xlsx"
+            "data_cts_intentional_homicide.csv"
         )
 
         try:
             resp = requests.get(url, timeout=30)
             resp.raise_for_status()
-            df_raw = pd.read_excel(io.BytesIO(resp.content))
+
+            # Try CSV first
+            try:
+                df_raw = pd.read_csv(io.StringIO(resp.text))
+            except Exception:
+                raise ValueError("Could not parse UNODC response as CSV")
 
             # Filter for Nigeria
-            df_nga = df_raw[
-                df_raw["Iso3_code"] == NIGERIA_ISO
-            ].copy()
+            iso_col = next(
+                (c for c in df_raw.columns if "iso" in c.lower()), None
+            )
+            if iso_col:
+                df_nga = df_raw[df_raw[iso_col] == NIGERIA_ISO].copy()
+            else:
+                country_col = next(
+                    (c for c in df_raw.columns if "country" in c.lower()), None
+                )
+                df_nga = df_raw[
+                    df_raw[country_col].str.contains("Nigeria", na=False)
+                ].copy() if country_col else pd.DataFrame()
 
             if df_nga.empty:
                 raise ValueError("No Nigeria data found in UNODC dataset")
 
-            print(f"[UNODCIngestor] Raw records: {len(df_nga)}")
+            print(f"[UNODCIngestor] Live records for Nigeria: {len(df_nga)}")
             return self._normalise_live(df_nga)
 
         except Exception as e:
