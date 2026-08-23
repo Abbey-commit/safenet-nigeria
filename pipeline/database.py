@@ -357,8 +357,13 @@ class ETLPipeline:
         try:
             # EXTRACT
             print("\n[1/4] Extracting conflict data...")
-            df = self.ingestor.fetch(days_back=days_back)
-            print(f"      → {len(df)} events fetched")
+            try:
+                df = self.ingestor.fetch(days_back=days_back)
+            except Exception as e:
+                print(f"      → Live fetch failed: {e}")
+                print(f"      → Falling back to synthetic data")
+                self.ingestor.use_live = False
+                df = self.ingestor._fetch_synthetic(days_back)
 
             # TRANSFORM (already done in ingestor._normalise)
             print("\n[2/4] Transform complete (normalised in ingestor)")

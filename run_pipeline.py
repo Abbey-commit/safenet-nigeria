@@ -1,64 +1,101 @@
 """
-SafeNet Nigeria — Phase 1
-Master Run Script
-=================
-Runs the full pipeline end-to-end:
-  Day 1: Extract (ACLED ingestor)
-  Day 2: Transform + Load (ETL + DB)
-  Day 3: Generate dashboard
+SafeNet Nigeria — Phase 2A
+Master Pipeline Runner
+=======================
+Runs all data sources in sequence:
+  Source 1: ACLED    — conflict events (incident level)
+  Source 2: UNODC    — crime statistics (structural level)
 
 Usage:
-    python run_pipeline.py                     # synthetic data (dev)
-    ACLED_API_KEY=xxx ACLED_EMAIL=y@z.com python run_pipeline.py  # live data
+    python run_pipeline.py
 
-To connect live ACLED data:
-  1. Register at: https://acleddata.com/register/
-  2. Get your API key from your account dashboard
-  3. Set env vars: ACLED_API_KEY and ACLED_EMAIL
-  4. Run again — zero other code changes needed
+Live data requires .env file with:
+    ACLED_EMAIL=info@safe-nigeria.com.ng
+    ACLED_PASSWORD=your_password
 """
 
 import os
 import sys
 import time
+import shutil
+
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass
 
 sys.path.insert(0, os.path.dirname(__file__))
 
 from pipeline.database import ETLPipeline
+from pipeline.unodc_ingestor import UNODCIngestor, UNODCDBStore
 from pipeline.generate_dashboard import generate
 
+
 def main():
+    start = time.time()
     print("\n" + "="*60)
-    print("  SAFENET NIGERIA — PHASE 1 PIPELINE")
-    print("  Conflict Intelligence System")
+    print("  SAFENET NIGERIA — PHASE 2A PIPELINE")
+    print("  Multi-Source Security Intelligence System")
     print("="*60 + "\n")
 
-    start = time.time()
-
-    # Step 1 + 2: Extract, Transform, Load
+    # ── SOURCE 1: ACLED conflict events ──────────────────────────
+    print("━"*60)
+    print("  DATA SOURCE 1: ACLED Conflict Events")
+    print("━"*60)
     pipeline = ETLPipeline(
-        password=os.getenv("ACLED_PASSWORD"),
         email=os.getenv("ACLED_EMAIL"),
+        password=os.getenv("ACLED_PASSWORD"),
     )
     result = pipeline.run(days_back=90, run_type="full_refresh")
 
-    # Step 3: Generate dashboard
-    print("\nGenerating intelligence dashboard...")
+    # ── SOURCE 2: UNODC crime statistics ─────────────────────────
+    print("\n" + "━"*60)
+    print("  DATA SOURCE 2: UNODC Crime Statistics")
+    print("━"*60)
+    unodc = UNODCIngestor()
+    unodc_df = unodc.fetch(years_back=5)
+    unodc_summary = unodc.get_summary(unodc_df)
+    print(f"[UNODC] Records: {unodc_summary['total_records']}")
+    print(f"[UNODC] Categories: {unodc_summary['categories']}")
+    print(f"[UNODC] States: {unodc_summary['states']}")
+
+    db_path = os.path.join(os.path.dirname(__file__), "data", "safenet.db")
+    unodc_store = UNODCDBStore(db_path)
+    unodc_counts = unodc_store.upsert(unodc_df)
+    unodc_store.refresh_sector_summary()
+    print(f"[UNODC] Stored: {unodc_counts}")
+
+    # ── GENERATE DASHBOARD ────────────────────────────────────────
+    print("\n" + "━"*60)
+    print("  GENERATING INTELLIGENCE DASHBOARD")
+    print("━"*60)
     output_path = generate()
 
+    # ── SYNC TO DOCS FOR GITHUB PAGES ────────────────────────────
+    docs_path = os.path.join(os.path.dirname(__file__), "docs")
+    os.makedirs(docs_path, exist_ok=True)
+    shutil.copy(
+        os.path.join(os.path.dirname(__file__), "dashboard", "index.html"),
+        os.path.join(docs_path, "index.html")
+    )
+    cname_path = os.path.join(docs_path, "CNAME")
+    if not os.path.exists(cname_path):
+        with open(cname_path, "w") as f:
+            f.write("safe-nigeria.com.ng")
+    print(f"[Pages] docs/index.html synced for GitHub Pages")
+
+    # ── SUMMARY ──────────────────────────────────────────────────
     total = round(time.time() - start, 2)
     print(f"\n{'='*60}")
-    print(f"  COMPLETE in {total}s")
-    print(f"  Events in store : {result['total_events']}")
-    print(f"  Critical events : {result['critical_events']}")
-    print(f"  Total fatalities: {result['total_fatalities']}")
+    print(f"  PIPELINE COMPLETE in {total}s")
+    print(f"  ACLED events     : {result['total_events']}")
+    print(f"  Critical events  : {result['critical_events']}")
+    print(f"  UNODC records    : {unodc_summary['total_records']}")
     print(f"  Dashboard        : {output_path}")
-    print(f"\n  To switch to live ACLED data:")
-    print(f"  1. Register free at https://acleddata.com/register/")
-    print(f"  2. export ACLED_API_KEY=your_key")
-    print(f"  3. export ACLED_EMAIL=your@email.com")
-    print(f"  4. python run_pipeline.py")
+    print(f"  Live domain      : https://safe-nigeria.com.ng")
     print(f"{'='*60}\n")
+
 
 if __name__ == "__main__":
     main()
