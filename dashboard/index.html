@@ -2,8 +2,6 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SafeNet Nigeria — Phase 1 Intelligence Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -315,7 +313,7 @@
   <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;padding:3px 10px;border:1px solid var(--border);border-radius:6px">PHASE 1 · CONFLICT INTELLIGENCE</span>
   <div class="header-meta">
     <div class="live-badge"><div class="live-dot"></div> PIPELINE ACTIVE</div>
-    <div class="gen-time">Generated 2026-08-23 16:11:54 WAT</div>
+    <div class="gen-time">Generated 2026-08-25 22:41:35 WAT</div>
   </div>
 </header>
 
@@ -326,24 +324,24 @@
   <!-- STAT CARDS -->
   <div class="stat-row">
     <div class="stat-card sc-red">
-      <div class="stat-label">Total Events</div>
+      <div class="stat-label">Conflict Events</div>
       <div class="stat-num">403</div>
-      <div class="stat-sub">Last 90 days · all zones</div>
+      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
       <div class="stat-num">179</div>
-      <div class="stat-sub">Battles + bombings</div>
+      <div class="stat-sub">Battles and bombings</div>
     </div>
     <div class="stat-card sc-amber">
       <div class="stat-label">Confirmed Fatalities</div>
       <div class="stat-num">496</div>
-      <div class="stat-sub">Human cost — not just a number</div>
+      <div class="stat-sub">Human cost · every life counted</div>
     </div>
-    <div class="stat-card sc-green">
-      <div class="stat-label">States Affected</div>
-      <div class="stat-num">35</div>
-      <div class="stat-sub">Across all 6 geopolitical zones</div>
+    <div class="stat-card sc-blue">
+      <div class="stat-label">Total Intelligence Records</div>
+      <div class="stat-num">2743</div>
+      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
     </div>
   </div>
 
@@ -417,10 +415,26 @@
 
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">18 ZONES</span></div>
+        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">24 ZONES</span></div>
         <div class="panel-meta">Sorted by risk score</div>
       </div>
       <div class="zones-wrap">
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">Northeast</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:16.9%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>121 events</span>
+            <span style="color:#FF4D4D">75 critical</span>
+            <span>64 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">16.9%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>ISWAP</em></div>
+        </div>
         <div class="zone-card">
           <div class="zone-head">
             <span class="zone-name">Northeast</span>
@@ -519,6 +533,22 @@
         </div>
         <div class="zone-card">
           <div class="zone-head">
+            <span class="zone-name">Northwest</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:16.6%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>141 events</span>
+            <span style="color:#FF4D4D">67 critical</span>
+            <span>317 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">16.6%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Military Forces of Nigeria</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
             <span class="zone-name">NorthCentral</span>
             <span class="trend-badge" style="color:#FF4D4D">↑ RISING</span>
           </div>
@@ -564,6 +594,38 @@
             <span style="color:#4CAF50;font-weight:600">16.5%</span>
           </div>
           <div class="zone-actor">Top actor: <em>Farmers/Herders</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">NorthCentral</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:16.5%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>81 events</span>
+            <span style="color:#FF4D4D">23 critical</span>
+            <span>73 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">16.5%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Farmers/Herders</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">SouthEast</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:14.3%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>16 events</span>
+            <span style="color:#FF4D4D">5 critical</span>
+            <span>8 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">14.3%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Unknown Armed Group</em></div>
         </div>
         <div class="zone-card">
           <div class="zone-head">
@@ -617,6 +679,22 @@
           <div class="zone-head">
             <span class="zone-name">SouthSouth</span>
             <span class="trend-badge" style="color:#FF4D4D">↑ RISING</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:11.8%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>32 events</span>
+            <span style="color:#FF4D4D">7 critical</span>
+            <span>30 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">11.8%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Unknown Armed Group</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">SouthSouth</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
           </div>
           <div class="zone-bar-wrap">
             <div class="zone-bar" style="width:11.8%;background:#4CAF50"></div>
@@ -665,6 +743,22 @@
           <div class="zone-head">
             <span class="zone-name">SouthWest</span>
             <span class="trend-badge" style="color:#FF4D4D">↑ RISING</span>
+          </div>
+          <div class="zone-bar-wrap">
+            <div class="zone-bar" style="width:9.9%;background:#4CAF50"></div>
+          </div>
+          <div class="zone-stats">
+            <span>12 events</span>
+            <span style="color:#FF4D4D">2 critical</span>
+            <span>4 fatalities</span>
+            <span style="color:#4CAF50;font-weight:600">9.9%</span>
+          </div>
+          <div class="zone-actor">Top actor: <em>Protesters</em></div>
+        </div>
+        <div class="zone-card">
+          <div class="zone-head">
+            <span class="zone-name">SouthWest</span>
+            <span class="trend-badge" style="color:#FFB830">→ STABLE</span>
           </div>
           <div class="zone-bar-wrap">
             <div class="zone-bar" style="width:9.9%;background:#4CAF50"></div>
@@ -866,6 +960,20 @@
           <span class="state-score" style="color:#FFB830">30.1</span>
         </div>
         <div class="state-row">
+          <span class="state-name">Anambra</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:30.13%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">30.1</span>
+        </div>
+        <div class="state-row">
+          <span class="state-name">Kogi</span>
+          <div class="state-bar-wrap">
+            <div class="state-bar" style="width:27.75%;background:#FFB830"></div>
+          </div>
+          <span class="state-score" style="color:#FFB830">27.8</span>
+        </div>
+        <div class="state-row">
           <span class="state-name">Kogi</span>
           <div class="state-bar-wrap">
             <div class="state-bar" style="width:27.75%;background:#FFB830"></div>
@@ -899,20 +1007,6 @@
             <div class="state-bar" style="width:23.8%;background:#FFB830"></div>
           </div>
           <span class="state-score" style="color:#FFB830">23.8</span>
-        </div>
-        <div class="state-row">
-          <span class="state-name">Bauchi</span>
-          <div class="state-bar-wrap">
-            <div class="state-bar" style="width:23.8%;background:#FFB830"></div>
-          </div>
-          <span class="state-score" style="color:#FFB830">23.8</span>
-        </div>
-        <div class="state-row">
-          <span class="state-name">Zamfara</span>
-          <div class="state-bar-wrap">
-            <div class="state-bar" style="width:22.31%;background:#FFB830"></div>
-          </div>
-          <span class="state-score" style="color:#FFB830">22.3</span>
         </div></div>
     </div>
   </div>
@@ -1037,25 +1131,19 @@
     </div>
     <div class="log-wrap">
         <div class="log-row">
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">2026-08-23 16:11</span>
-          <span style="font-size:11px">full_refresh</span>
-          <span style="font-size:11px">403 fetched</span>
-          <span style="color:#4CAF50;font-size:11px;font-weight:600">SUCCESS</span>
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">1.32s</span>
+          <span style="font-size:12px;color:var(--text2)">Last updated: 2026-08-25 22:41 WAT</span>
+          <span style="font-size:12px;color:var(--text2)">403 records checked</span>
+          <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
         </div>
         <div class="log-row">
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">2026-08-23 16:06</span>
-          <span style="font-size:11px">full_refresh</span>
-          <span style="font-size:11px">403 fetched</span>
-          <span style="color:#4CAF50;font-size:11px;font-weight:600">SUCCESS</span>
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">1.43s</span>
+          <span style="font-size:12px;color:var(--text2)">Last updated: 2026-08-23 16:11 WAT</span>
+          <span style="font-size:12px;color:var(--text2)">403 records checked</span>
+          <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
         </div>
         <div class="log-row">
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">2026-08-23 15:56</span>
-          <span style="font-size:11px">full_refresh</span>
-          <span style="font-size:11px">403 fetched</span>
-          <span style="color:#4CAF50;font-size:11px;font-weight:600">SUCCESS</span>
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">1.42s</span>
+          <span style="font-size:12px;color:var(--text2)">Last updated: 2026-08-23 16:06 WAT</span>
+          <span style="font-size:12px;color:var(--text2)">403 records checked</span>
+          <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
         </div></div>
     <div class="psych-note" style="margin:12px 18px;border-radius:8px">
       <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts

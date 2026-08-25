@@ -89,14 +89,41 @@ def load_data():
         LIMIT 6
     """).fetchall()]
 
-    # DB stats
-    stats = dict(conn.execute("""
+    # Combined stats from all three sources
+    acled = dict(conn.execute("""
         SELECT COUNT(*) as total_events,
                SUM(CASE WHEN severity_level='CRITICAL' THEN 1 ELSE 0 END) as critical,
                SUM(fatalities) as total_fatalities,
                COUNT(DISTINCT admin1) as states_affected
         FROM conflict_events
     """).fetchone())
+
+    unodc_count = conn.execute(
+        "SELECT COUNT(*) FROM unodc_crime_stats"
+    ).fetchone()[0] if conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='unodc_crime_stats'"
+    ).fetchone() else 0
+
+    npf_count = conn.execute(
+        "SELECT COUNT(*) FROM npf_crime_records"
+    ).fetchone()[0] if conn.execute(
+        "SELECT name FROM sqlite_master WHERE type='table' AND name='npf_crime_records'"
+    ).fetchone() else 0
+
+    npf_reported = conn.execute(
+        "SELECT SUM(reported_cases) FROM npf_crime_records"
+    ).fetchone()[0] or 0 if npf_count > 0 else 0
+
+    stats = {
+        "total_events":     acled["total_events"],
+        "critical":         acled["critical"],
+        "total_fatalities": acled["total_fatalities"] or 0,
+        "states_affected":  acled["states_affected"],
+        "unodc_records":    unodc_count,
+        "npf_records":      npf_count,
+        "npf_reported":     int(npf_reported or 0),
+        "total_records":    (acled["total_events"] or 0) + unodc_count + npf_count,
+    }
 
     # ETL log
     etl_log = [dict(r) for r in conn.execute("""
@@ -336,17 +363,17 @@ def render_html(data) -> str:
           <span class="actor-count">{a['incidents']}</span>
         </div>"""
 
-    # ETL log rows
+    # Data freshness rows — plain English format
     etl_rows = ""
     for log in etl_log:
-        status_col = "#4CAF50" if log["status"] == "SUCCESS" else "#FF4D4D"
+        status_text = "✓ Updated successfully" if log["status"] == "SUCCESS" else "⚠ Update had issues"
+        status_col  = "#4CAF50" if log["status"] == "SUCCESS" else "#FFB830"
+        run_time    = log["run_at"][:16].replace("T", " at ")
         etl_rows += f"""
         <div class="log-row">
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">{log['run_at'][:16]}</span>
-          <span style="font-size:11px">{log['run_type']}</span>
-          <span style="font-size:11px">{log['records_fetched']} fetched</span>
-          <span style="color:{status_col};font-size:11px;font-weight:600">{log['status']}</span>
-          <span style="color:rgba(255,255,255,0.4);font-size:11px">{log['duration_seconds']}s</span>
+          <span style="font-size:12px;color:var(--text2)">Last updated: {run_time} WAT</span>
+          <span style="font-size:12px;color:var(--text2)">{log['records_fetched']} records checked</span>
+          <span style="color:{status_col};font-size:12px;font-weight:600">{status_text}</span>
         </div>"""
 
     return f"""<!DOCTYPE html>
@@ -675,24 +702,24 @@ def render_html(data) -> str:
   <!-- STAT CARDS -->
   <div class="stat-row">
     <div class="stat-card sc-red">
-      <div class="stat-label">Total Events</div>
+      <div class="stat-label">Conflict Events</div>
       <div class="stat-num">{stats['total_events']}</div>
-      <div class="stat-sub">Last 90 days · all zones</div>
+      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
       <div class="stat-num">{stats['critical']}</div>
-      <div class="stat-sub">Battles + bombings</div>
+      <div class="stat-sub">Battles and bombings</div>
     </div>
     <div class="stat-card sc-amber">
       <div class="stat-label">Confirmed Fatalities</div>
       <div class="stat-num">{stats['total_fatalities']}</div>
-      <div class="stat-sub">Human cost — not just a number</div>
+      <div class="stat-sub">Human cost · every life counted</div>
     </div>
-    <div class="stat-card sc-green">
-      <div class="stat-label">States Affected</div>
-      <div class="stat-num">{stats['states_affected']}</div>
-      <div class="stat-sub">Across all 6 geopolitical zones</div>
+    <div class="stat-card sc-blue">
+      <div class="stat-label">Total Intelligence Records</div>
+      <div class="stat-num">{stats['total_records']}</div>
+      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
     </div>
   </div>
 
