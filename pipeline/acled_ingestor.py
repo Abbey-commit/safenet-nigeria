@@ -217,6 +217,7 @@ class ACLEDIngestor:
         self.auth     = ACLEDAuth(self.email, self.password) if self.use_live else None
 
         mode = "LIVE (ACLED OAuth)" if self.use_live else "SYNTHETIC (dev mode)"
+        self.data_mode = "LIVE" if self.use_live else "SAMPLE"
         print(f"[ACLEDIngestor] Mode: {mode}")
         if not self.use_live:
             print("[ACLEDIngestor] Add ACLED_EMAIL + ACLED_PASSWORD to Codespaces")
@@ -224,7 +225,16 @@ class ACLEDIngestor:
 
     def fetch(self, country: str = "Nigeria", days_back: int = 90) -> pd.DataFrame:
         if self.use_live:
-            return self._fetch_live(country, days_back)
+            try:
+                df = self._fetch_live(country, days_back)
+                self.data_mode = "LIVE"
+                return df
+            except Exception as e:
+                print(f"      → Live fetch failed: {e}")
+                print(f"      → Falling back to sample data")
+                self.data_mode = "SAMPLE"
+                return self._fetch_synthetic(days_back)
+        self.data_mode = "SAMPLE"
         return self._fetch_synthetic(days_back)
 
     def _fetch_live(self, country: str, days_back: int) -> pd.DataFrame:

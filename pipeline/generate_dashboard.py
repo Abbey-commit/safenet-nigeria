@@ -128,10 +128,17 @@ def load_data():
     # ETL log
     etl_log = [dict(r) for r in conn.execute("""
         SELECT run_at, run_type, records_fetched, records_inserted,
-               duration_seconds, status
+               duration_seconds, status, data_source
         FROM etl_run_log
         ORDER BY run_at DESC LIMIT 3
     """).fetchall()]
+
+    # Determine data mode from latest run
+    latest = etl_log[0] if etl_log else {}
+    is_live = latest.get("data_source", "Synthetic") not in [
+        "Synthetic", "SYNTHETIC", "SafeNet Synthetic"
+    ]
+    data_mode = "LIVE" if is_live else "SAMPLE"
 
     conn.close()
     return {
@@ -143,6 +150,7 @@ def load_data():
         "actors": actors,
         "stats": stats,
         "etl_log": etl_log,
+        "data_mode": data_mode,
         "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S WAT"),
     }
 
@@ -260,7 +268,19 @@ def render_html(data) -> str:
     actors = data["actors"]
     stats = data["stats"]
     etl_log = data["etl_log"]
-    generated_at = data["generated_at"]
+    generated_at  = data["generated_at"]
+    data_mode     = data.get("data_mode", "SAMPLE")
+    is_live       = data_mode == "LIVE"
+    data_mode_label   = "LIVE INTELLIGENCE" if is_live else "SAMPLE DATA — NOT LIVE"
+    data_source_note  = "Live data" if is_live else "Sample data · ACLED access pending"
+    sample_banner = "" if is_live else """
+    <div style="background:#FFB830;color:#000;padding:10px 28px;font-size:13px;
+                font-weight:600;display:flex;align-items:center;gap:10px;
+                border-bottom:1px solid rgba(0,0,0,0.1);">
+      <span>⚠️</span>
+      <span>This dashboard is currently showing sample data for demonstration purposes.
+      Live data integration is in progress. Numbers shown are illustrative, not real.</span>
+    </div>""" 
 
     severity_color = {"CRITICAL": "#FF4D4D", "HIGH": "#FF8C42", "MEDIUM": "#FFB830", "LOW": "#4CAF50"}
     trend_arrow = {"RISING": "↑", "DECLINING": "↓", "STABLE": "→"}
@@ -380,8 +400,8 @@ def render_html(data) -> str:
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-    <link rel="icon" type="image/svg+xml" href="favicon.svg">
-    <link rel="shortcut icon" href="favicon.svg">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SafeNet Nigeria — Phase 1 Intelligence Dashboard</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -696,6 +716,9 @@ def render_html(data) -> str:
     <div class="gen-time">Generated {generated_at}</div>
   </div>
 </header>
+
+<!-- SAMPLE DATA BANNER -->
+{sample_banner}
 
 <!-- CONTENT -->
 <main class="content">

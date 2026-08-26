@@ -204,9 +204,11 @@ class SafeNetDB:
         return {"inserted": inserted, "updated": updated}
 
     def refresh_zone_summaries(self):
-        """Recompute zone-level aggregates. Called after every ingest."""
+        """Recompute zone-level aggregates. Clears old rows first to prevent duplicates."""
         today = datetime.date.today().isoformat()
         with self._connect() as conn:
+            # Delete today's summaries before recomputing — prevents duplicate rows
+            conn.execute("DELETE FROM zone_threat_summary WHERE snapshot_date = ?", (today,))
             zones = [r[0] for r in conn.execute(
                 "SELECT DISTINCT zone FROM conflict_events WHERE zone IS NOT NULL"
             ).fetchall()]
@@ -269,6 +271,8 @@ class SafeNetDB:
     def refresh_state_summaries(self):
         today = datetime.date.today().isoformat()
         with self._connect() as conn:
+            # Delete today's summaries before recomputing — prevents duplicate rows
+            conn.execute("DELETE FROM state_threat_summary WHERE snapshot_date = ?", (today,))
             states = [r[0] for r in conn.execute(
                 "SELECT DISTINCT admin1 FROM conflict_events WHERE admin1 IS NOT NULL"
             ).fetchall()]
@@ -343,8 +347,8 @@ class ETLPipeline:
     In production this runs on Apache Airflow daily at 06:00 WAT.
     """
 
-    def __init__(self, email=None, password=None):
-        self.ingestor = ACLEDIngestor(email=email, password=password)
+    def __init__(self, api_key=None, email=None):
+        self.ingestor = ACLEDIngestor(api_key=api_key, email=email)
         self.db = SafeNetDB()
 
     def run(self, days_back: int = 90, run_type: str = "full_refresh") -> dict:
@@ -357,13 +361,8 @@ class ETLPipeline:
         try:
             # EXTRACT
             print("\n[1/4] Extracting conflict data...")
-            try:
-                df = self.ingestor.fetch(days_back=days_back)
-            except Exception as e:
-                print(f"      → Live fetch failed: {e}")
-                print(f"      → Falling back to synthetic data")
-                self.ingestor.use_live = False
-                df = self.ingestor._fetch_synthetic(days_back)
+            df = self.ingestor.fetch(days_back=days_back)
+            print(f"      → {len(df)} events fetched")
 
             # TRANSFORM (already done in ingestor._normalise)
             print("\n[2/4] Transform complete (normalised in ingestor)")

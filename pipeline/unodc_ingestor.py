@@ -152,45 +152,31 @@ class UNODCIngestor:
 
     def _fetch_live(self, years_back: int) -> pd.DataFrame:
         """
-        Fetches from UNODC data portal using their CSV endpoint.
-        More stable than Excel file downloads.
+        Fetches from UNODC data portal.
+        UNODC provides CSV downloads — we parse them directly.
         """
         print("[UNODCIngestor] Fetching live UNODC data for Nigeria...")
 
-        # UNODC homicide CSV — most stable endpoint
+        # UNODC homicide dataset — most reliable Nigeria data
         url = (
             "https://dataunodc.un.org/sites/dataunodc.un.org/files/"
-            "data_cts_intentional_homicide.csv"
+            "data_cts_intentional_homicide.xlsx"
         )
 
         try:
             resp = requests.get(url, timeout=30)
             resp.raise_for_status()
-
-            # Try CSV first
-            try:
-                df_raw = pd.read_csv(io.StringIO(resp.text))
-            except Exception:
-                raise ValueError("Could not parse UNODC response as CSV")
+            df_raw = pd.read_excel(io.BytesIO(resp.content))
 
             # Filter for Nigeria
-            iso_col = next(
-                (c for c in df_raw.columns if "iso" in c.lower()), None
-            )
-            if iso_col:
-                df_nga = df_raw[df_raw[iso_col] == NIGERIA_ISO].copy()
-            else:
-                country_col = next(
-                    (c for c in df_raw.columns if "country" in c.lower()), None
-                )
-                df_nga = df_raw[
-                    df_raw[country_col].str.contains("Nigeria", na=False)
-                ].copy() if country_col else pd.DataFrame()
+            df_nga = df_raw[
+                df_raw["Iso3_code"] == NIGERIA_ISO
+            ].copy()
 
             if df_nga.empty:
                 raise ValueError("No Nigeria data found in UNODC dataset")
 
-            print(f"[UNODCIngestor] Live records for Nigeria: {len(df_nga)}")
+            print(f"[UNODCIngestor] Raw records: {len(df_nga)}")
             return self._normalise_live(df_nga)
 
         except Exception as e:
@@ -442,9 +428,12 @@ class UNODCDBStore:
         return {"inserted": inserted, "updated": updated}
 
     def refresh_sector_summary(self):
-        """Recompute sector-level aggregates for dashboard."""
+        """Recompute sector-level aggregates. Clears old rows first."""
         today = datetime.date.today().isoformat()
         with self._connect() as conn:
+            conn.execute(
+                "DELETE FROM unodc_sector_summary WHERE snapshot_date = ?", (today,)
+            )
             sectors = [r[0] for r in conn.execute(
                 "SELECT DISTINCT sector FROM unodc_crime_stats"
             ).fetchall()]

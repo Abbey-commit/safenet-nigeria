@@ -506,6 +506,9 @@ class NPFDBStore:
     def refresh_sector_summary(self):
         today = datetime.date.today().isoformat()
         with self._connect() as conn:
+            conn.execute(
+                "DELETE FROM npf_sector_summary WHERE snapshot_date = ?", (today,)
+            )
             sectors = [r[0] for r in conn.execute(
                 "SELECT DISTINCT sector FROM npf_crime_records"
             ).fetchall()]
