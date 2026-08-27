@@ -347,8 +347,8 @@ class ETLPipeline:
     In production this runs on Apache Airflow daily at 06:00 WAT.
     """
 
-    def __init__(self, api_key=None, email=None):
-        self.ingestor = ACLEDIngestor(api_key=api_key, email=email)
+    def __init__(self, api_key=None, email=None, password=None):
+        self.ingestor = ACLEDIngestor(email=email, password=password)
         self.db = SafeNetDB()
 
     def run(self, days_back: int = 90, run_type: str = "full_refresh") -> dict:
