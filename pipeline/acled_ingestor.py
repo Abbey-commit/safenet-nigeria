@@ -98,21 +98,29 @@ NIGERIA_ZONES = {
     },
 }
 
+# Primary aggressors — non-state threat actors only
+# Security forces appear as actor2 (responders), never actor1 (aggressors)
 ACTORS = {
-    "Northwest":    ["Bandits", "Yan Bindiga", "Yan Daba", "Unknown Armed Group",
-                     "Military Forces of Nigeria", "Nigerian Police Force"],
-    "Northeast":    ["Boko Haram", "ISWAP", "Military Forces of Nigeria",
+    "Northwest":    ["Bandits", "Yan Bindiga", "Yan Daba",
+                     "Unknown Armed Group", "Lakurawa Group"],
+    "Northeast":    ["Boko Haram", "ISWAP",
                      "CJTF (Civilian Joint Task Force)", "Unknown Armed Group"],
     "NorthCentral": ["Fulani Ethnic Militia", "Farmers/Herders",
-                     "Military Forces of Nigeria", "Nigerian Police Force",
-                     "Unknown Armed Group"],
-    "SouthSouth":   ["Unknown Armed Group", "Nigerian Police Force",
-                     "NDELTA Avengers", "Pirates/Sea Robbers", "Cult Groups"],
-    "SouthEast":    ["IPOB/ESN", "Nigerian Police Force",
-                     "Unknown Armed Group", "Cult Groups"],
-    "SouthWest":    ["Unknown Armed Group", "Nigerian Police Force",
-                     "Cult Groups", "Protesters"],
+                     "Unknown Armed Group", "Tiv Militia"],
+    "SouthSouth":   ["Unknown Armed Group", "NDELTA Avengers",
+                     "Pirates/Sea Robbers", "Cult Groups"],
+    "SouthEast":    ["IPOB/ESN", "Unknown Armed Group",
+                     "Cult Groups"],
+    "SouthWest":    ["Unknown Armed Group", "Cult Groups", "Protesters"],
 }
+
+# Responders — always actor2
+SECURITY_FORCES = [
+    "Military Forces of Nigeria",
+    "Nigerian Police Force",
+    "Nigerian Air Force",
+    "DSS (Department of State Services)",
+]
 
 SEVERITY_MAP = {
     "Battles":                    {"level": "CRITICAL", "human_label": "Armed confrontation"},

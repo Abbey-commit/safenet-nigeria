@@ -403,7 +403,7 @@ def render_html(data) -> str:
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
 <link rel="shortcut icon" href="favicon.svg">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SafeNet Nigeria — Phase 1 Intelligence Dashboard</title>
+<title>SafeNet Nigeria — Security Intelligence Platform</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Barlow:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
@@ -712,7 +712,7 @@ def render_html(data) -> str:
   </div>
   <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;padding:3px 10px;border:1px solid var(--border);border-radius:6px">PHASE 1 · CONFLICT INTELLIGENCE</span>
   <div class="header-meta">
-    <div class="live-badge"><div class="live-dot"></div> PIPELINE ACTIVE</div>
+    <div class="live-badge"><div class="live-dot"></div> SAMPLE DATA — DEMONSTRATION MODE</div>
     <div class="gen-time">Generated {generated_at}</div>
   </div>
 </header>
@@ -720,6 +720,24 @@ def render_html(data) -> str:
 <!-- SAMPLE DATA BANNER -->
 {sample_banner}
 
+
+  <!-- SAMPLE DATA NOTICE -->
+  <div style="background:linear-gradient(90deg,#FFB830,#FF8C42);
+              color:#000;padding:11px 28px;font-size:13px;
+              font-weight:600;display:flex;align-items:center;
+              gap:10px;position:sticky;top:58px;z-index:99;">
+    <span style="font-size:16px">⚠️</span>
+    <span>SAMPLE DATA — This dashboard is running on demonstration data.
+    Live intelligence integration is in progress.
+    Statistics shown are illustrative only.</span>
+    <a href="https://github.com/Abbey-commit/safenet-nigeria"
+       style="margin-left:auto;color:#000;font-size:11px;
+              text-decoration:underline;white-space:nowrap">
+      View source →
+    </a>
+  </div>
+
+  <!-- SAMPLE DATA NOTICE -->
 <!-- CONTENT -->
 <main class="content">
   <div class="page-title">Nigeria Security Intelligence Dashboard · <span>90-Day Analysis Window</span></div>
@@ -765,7 +783,7 @@ def render_html(data) -> str:
 
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">{len(zones)} ZONES</span></div>
+        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">6 ZONES</span></div>
         <div class="panel-meta">Sorted by risk score</div>
       </div>
       <div class="zones-wrap">{zone_cards}</div>
@@ -826,8 +844,8 @@ def render_html(data) -> str:
   <!-- ETL AUDIT LOG -->
   <div class="panel">
     <div class="panel-head">
-      <div class="panel-title">🔧 ETL Pipeline Audit Log <span class="panel-badge pb-green">TRANSPARENT</span></div>
-      <div class="panel-meta" style="font-style:italic;color:var(--text3)">Every data run is recorded — immutable audit trail</div>
+      <div class="panel-title">✅ Data Freshness &amp; Update Log <span class="panel-badge pb-green">VERIFIED</span></div>
+      <div class="panel-meta" style="font-style:italic;color:var(--text3)">When was this data last updated?</div>
     </div>
     <div class="log-wrap">{etl_rows}</div>
     <div class="psych-note" style="margin:12px 18px;border-radius:8px">
