@@ -747,7 +747,7 @@ def render_html(data) -> str:
     <div class="stat-card sc-red">
       <div class="stat-label">Conflict Events</div>
       <div class="stat-num">{stats['total_events']}</div>
-      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
+      <div class="stat-sub">Last 90 days · all zones · conflict data</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
@@ -762,7 +762,7 @@ def render_html(data) -> str:
     <div class="stat-card sc-blue">
       <div class="stat-label">Total Intelligence Records</div>
       <div class="stat-num">{stats['total_records']}</div>
-      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
+      <div class="stat-sub">Conflict data · UNODC · Nigeria Police Force</div>
     </div>
   </div>
 
