@@ -166,7 +166,7 @@ class UNODCIngestor:
         try:
             resp = requests.get(url, timeout=30)
             resp.raise_for_status()
-            df_raw = pd.read_excel(io.BytesIO(resp.content))
+            df_raw = pd.read_excel(io.BytesIO(resp.content), engine="openpyxl")
 
             # Filter for Nigeria
             df_nga = df_raw[
