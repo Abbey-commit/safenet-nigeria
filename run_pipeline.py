@@ -56,6 +56,12 @@ def main():
     db_path = os.path.join(os.path.dirname(__file__), "data", "safenet.db")
 
     # ── SOURCE 1: ACLED ──────────────────────────────────────────
+    # PAUSED as of [today's date] pending resolution of ACLED compliance
+    # review (formal notice received re: non-transformative display).
+    # Re-enable only after: (1) written confirmation from ACLED, and
+    # (2) confirming the correct license tier for public/non-academic use.
+    ACLED_PAUSED = True
+
     def run_acled():
         pipeline = ETLPipeline(
             email=os.getenv("ACLED_EMAIL"),
@@ -63,7 +69,11 @@ def main():
         )
         return pipeline.run(days_back=90, run_type="full_refresh")
 
-    acled_result = run_source("ACLED Conflict Events", run_acled)
+    if ACLED_PAUSED:
+        print("\n[SKIPPED] ACLED Conflict Events — paused pending compliance review")
+        acled_result = None
+    else:
+        acled_result = run_source("ACLED Conflict Events", run_acled)
 
     # ── SOURCE 2: UNODC ──────────────────────────────────────────
     def run_unodc():
