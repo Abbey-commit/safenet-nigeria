@@ -315,7 +315,7 @@
   <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;padding:3px 10px;border:1px solid var(--border);border-radius:6px">PHASE 1 · CONFLICT INTELLIGENCE</span>
   <div class="header-meta">
     <div class="live-badge"><div class="live-dot"></div> SAMPLE DATA — DEMONSTRATION MODE</div>
-    <div class="gen-time">Generated 2026-08-29 13:46:44 WAT</div>
+    <div class="gen-time">Generated 2026-08-29 20:34:28 WAT</div>
   </div>
 </header>
 
@@ -349,7 +349,7 @@
     <div class="stat-card sc-red">
       <div class="stat-label">Conflict Events</div>
       <div class="stat-num">403</div>
-      <div class="stat-sub">Last 90 days · all zones · conflict data</div>
+      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
@@ -364,7 +364,7 @@
     <div class="stat-card sc-blue">
       <div class="stat-label">Total Intelligence Records</div>
       <div class="stat-num">2743</div>
-      <div class="stat-sub">Conflict data · UNODC · Nigeria Police Force</div>
+      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
     </div>
   </div>
 
@@ -438,7 +438,7 @@
 
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">6 ZONES</span></div>
+        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">12 ZONES</span></div>
         <div class="panel-meta">Sorted by risk score</div>
       </div>
       <div class="zones-wrap">
@@ -641,22 +641,17 @@
   <div class="grid-2">
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">🚨 Highest Threat Events <span class="panel-badge pb-red">TOP 8</span></div>
-        <div class="panel-meta">Score = recency × severity × impact</div>
+        <div class="panel-title">📊 Recent Activity Snapshot <span class="panel-badge pb-red">7-DAY SUMMARY</span></div>
+        <div class="panel-meta">Aggregated by zone & severity — no individual records</div>
       </div>
       <div class="alerts-wrap">
-        <div class="alert-row" data-severity="LOW">
-          <div class="sev-pill" style="background:#4CAF5022;color:#4CAF50;border-color:#4CAF5044">
-            LOW
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
           </div>
           <div class="alert-info">
-            <div class="alert-title">Intelligence signal — Delta, SouthSouth</div>
-            <div class="alert-sub">NDELTA Avengers · Today · 0 fatalities</div>
-            <div class="alert-note">Security forces neutralised NDELTA Avengers cell in Delta.</div>
-          </div>
-          <div class="score-badge" style="border-color:#4CAF5066">
-            <span style="color:#4CAF50;font-size:18px;font-weight:700">76</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">Northeast</div>
+            <div class="alert-sub">8 incidents this week · 1 fatalities</div>
           </div>
         </div>
         <div class="alert-row" data-severity="CRITICAL">
@@ -664,13 +659,8 @@
             CRITICAL
           </div>
           <div class="alert-info">
-            <div class="alert-title">Bombing or IED — Bauchi, Northeast</div>
-            <div class="alert-sub">Military Forces of Nigeria · Today · 0 fatalities</div>
-            <div class="alert-note">IED detonated on rural road in Bauchi. Military Forces of Nigeria implicated.</div>
-          </div>
-          <div class="score-badge" style="border-color:#FF4D4D66">
-            <span style="color:#FF4D4D;font-size:18px;font-weight:700">70</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">NorthCentral</div>
+            <div class="alert-sub">4 incidents this week · 0 fatalities</div>
           </div>
         </div>
         <div class="alert-row" data-severity="CRITICAL">
@@ -678,13 +668,17 @@
             CRITICAL
           </div>
           <div class="alert-info">
-            <div class="alert-title">Armed confrontation — Yobe, Northeast</div>
-            <div class="alert-sub">Military Forces of Nigeria · 3d ago · 0 fatalities</div>
-            <div class="alert-note">Armed clash between Military Forces of Nigeria and security forces in Yobe.</div>
+            <div class="alert-title">Northwest</div>
+            <div class="alert-sub">4 incidents this week · 5 fatalities</div>
           </div>
-          <div class="score-badge" style="border-color:#FF4D4D66">
-            <span style="color:#FF4D4D;font-size:18px;font-weight:700">68</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+        </div>
+        <div class="alert-row" data-severity="CRITICAL">
+          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
+            CRITICAL
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">SouthEast</div>
+            <div class="alert-sub">1 incidents this week · 2 fatalities</div>
           </div>
         </div>
         <div class="alert-row" data-severity="HIGH">
@@ -692,69 +686,53 @@
             HIGH
           </div>
           <div class="alert-info">
-            <div class="alert-title">Civilian attack — Katsina, Northwest</div>
-            <div class="alert-sub">Nigerian Police Force · 1d ago · 0 fatalities</div>
-            <div class="alert-note">Attack on community by Nigerian Police Force in Katsina.</div>
-          </div>
-          <div class="score-badge" style="border-color:#FF8C4266">
-            <span style="color:#FF8C42;font-size:18px;font-weight:700">68</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">NorthCentral</div>
+            <div class="alert-sub">2 incidents this week · 2 fatalities</div>
           </div>
         </div>
-        <div class="alert-row" data-severity="CRITICAL">
-          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
-            CRITICAL
+        <div class="alert-row" data-severity="HIGH">
+          <div class="sev-pill" style="background:#FF8C4222;color:#FF8C42;border-color:#FF8C4244">
+            HIGH
           </div>
           <div class="alert-info">
-            <div class="alert-title">Armed confrontation — FCT, NorthCentral</div>
-            <div class="alert-sub">Farmers/Herders · 6d ago · 0 fatalities</div>
-            <div class="alert-note">Armed clash between Farmers/Herders and security forces in FCT.</div>
-          </div>
-          <div class="score-badge" style="border-color:#FF4D4D66">
-            <span style="color:#FF4D4D;font-size:18px;font-weight:700">66</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">Northeast</div>
+            <div class="alert-sub">2 incidents this week · 0 fatalities</div>
           </div>
         </div>
-        <div class="alert-row" data-severity="CRITICAL">
-          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
-            CRITICAL
+        <div class="alert-row" data-severity="HIGH">
+          <div class="sev-pill" style="background:#FF8C4222;color:#FF8C42;border-color:#FF8C4244">
+            HIGH
           </div>
           <div class="alert-info">
-            <div class="alert-title">Armed confrontation — Gombe, Northeast</div>
-            <div class="alert-sub">Boko Haram · 4d ago · 0 fatalities</div>
-            <div class="alert-note">Armed clash between Boko Haram and security forces in Gombe.</div>
-          </div>
-          <div class="score-badge" style="border-color:#FF4D4D66">
-            <span style="color:#FF4D4D;font-size:18px;font-weight:700">66</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">Northwest</div>
+            <div class="alert-sub">1 incidents this week · 0 fatalities</div>
           </div>
         </div>
-        <div class="alert-row" data-severity="CRITICAL">
-          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
-            CRITICAL
+        <div class="alert-row" data-severity="LOW">
+          <div class="sev-pill" style="background:#4CAF5022;color:#4CAF50;border-color:#4CAF5044">
+            LOW
           </div>
           <div class="alert-info">
-            <div class="alert-title">Armed confrontation — Borno, Northeast</div>
-            <div class="alert-sub">Military Forces of Nigeria · 4d ago · 1 fatalities</div>
-            <div class="alert-note">Gun battle involving Military Forces of Nigeria near farmland in Borno.</div>
-          </div>
-          <div class="score-badge" style="border-color:#FF4D4D66">
-            <span style="color:#FF4D4D;font-size:18px;font-weight:700">66</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">Northeast</div>
+            <div class="alert-sub">2 incidents this week · 0 fatalities</div>
           </div>
         </div>
-        <div class="alert-row" data-severity="CRITICAL">
-          <div class="sev-pill" style="background:#FF4D4D22;color:#FF4D4D;border-color:#FF4D4D44">
-            CRITICAL
+        <div class="alert-row" data-severity="LOW">
+          <div class="sev-pill" style="background:#4CAF5022;color:#4CAF50;border-color:#4CAF5044">
+            LOW
           </div>
           <div class="alert-info">
-            <div class="alert-title">Armed confrontation — Sokoto, Northwest</div>
-            <div class="alert-sub">Unknown Armed Group · 2d ago · 0 fatalities</div>
-            <div class="alert-note">Armed clash between Unknown Armed Group and security forces in Sokoto.</div>
+            <div class="alert-title">SouthSouth</div>
+            <div class="alert-sub">2 incidents this week · 0 fatalities</div>
           </div>
-          <div class="score-badge" style="border-color:#FF4D4D66">
-            <span style="color:#FF4D4D;font-size:18px;font-weight:700">65</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+        </div>
+        <div class="alert-row" data-severity="LOW">
+          <div class="sev-pill" style="background:#4CAF5022;color:#4CAF50;border-color:#4CAF5044">
+            LOW
+          </div>
+          <div class="alert-info">
+            <div class="alert-title">NorthCentral</div>
+            <div class="alert-sub">1 incidents this week · 1 fatalities</div>
           </div>
         </div></div>
       <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
