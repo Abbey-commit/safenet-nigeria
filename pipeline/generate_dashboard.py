@@ -779,11 +779,7 @@ def render_html(data) -> str:
         <div class="panel-meta">Avg threat score</div>
       </div>
       <div class="map-wrap">{map_svg}</div>
-      <div class="psych-note">
-        <strong>Design note:</strong> Colour intensity scales with threat score, not raw event count.
-        High-fatality low-frequency zones are not underweighted — protecting against
-        "psychic numbing" (Slovic, 2007).
-      </div>
+
     </div>
 
     <div class="panel">
