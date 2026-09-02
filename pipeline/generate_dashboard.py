@@ -275,14 +275,13 @@ def render_html(data) -> str:
     states = data["states"][:10]
     timeseries = data["timeseries"]
     event_types = data["event_types"]
-    actors = data["actors"]
     stats = data["stats"]
     etl_log = data["etl_log"]
     generated_at  = data["generated_at"]
     data_mode     = data.get("data_mode", "SAMPLE")
     is_live       = data_mode == "LIVE"
     data_mode_label   = "LIVE INTELLIGENCE" if is_live else "SAMPLE DATA — NOT LIVE"
-    data_source_note  = "Live data" if is_live else "Sample data · Live integration in progress"
+    data_source_note  = "Live data" if is_live else "Sample data · ACLED access pending"
     sample_banner = "" if is_live else """
     <div style="background:#FFB830;color:#000;padding:10px 28px;font-size:13px;
                 font-weight:600;display:flex;align-items:center;gap:10px;
@@ -299,7 +298,11 @@ def render_html(data) -> str:
     map_svg = build_nigeria_map_svg(data["states"])
     ts_svg = build_timeseries_svg(timeseries)
 
-    # Build zone cards
+    # Build zone cards — RISK SCORE + TREND ONLY.
+    # Deliberately excludes event_count, critical_events, total_fatalities,
+    # and top_actor: these, combined across zones, could be used to infer
+    # patterns approximating ACLED's underlying event-level data. Only the
+    # final aggregated risk percentage and trend direction are shown.
     zone_cards = ""
     for z in zones:
         col = severity_color.get("CRITICAL" if z["risk_pct"] > 60 else
@@ -318,9 +321,8 @@ def render_html(data) -> str:
             <div class="zone-bar" style="width:{bar_w}%;background:{col}"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:{col};font-weight:600">Risk score: {z['risk_pct']}%</span>
+            <span style="color:{col};font-weight:600">{z['risk_pct']}% risk score</span>
           </div>
-
         </div>"""
 
     # Build recent-activity rows — aggregated by zone + severity only.
@@ -371,19 +373,10 @@ def render_html(data) -> str:
           <span class="et-pct">{pct}%</span>
         </div>"""
 
-    # Actor rows
-    actor_rows = ""
-    max_inc = max((a["incidents"] for a in actors), default=1)
-    for a in actors:
-        bar = round(a["incidents"] / max_inc * 100)
-        actor_rows += f"""
-        <div class="actor-row">
-          <span class="actor-name">{a['actor']}</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:{bar}%"></div>
-          </div>
-          <span class="actor-count">{a['incidents']}</span>
-        </div>"""
+    # NOTE: actor-level breakdown removed entirely (ACLED compliance) —
+    # named actor entities (e.g. "ISWAP", "Military Forces of Nigeria")
+    # are not displayed anywhere on the public dashboard, even in
+    # aggregated form.
 
     # Data freshness rows — plain English format
     etl_rows = ""
@@ -749,7 +742,7 @@ def render_html(data) -> str:
     <div class="stat-card sc-red">
       <div class="stat-label">Conflict Events</div>
       <div class="stat-num">{stats['total_events']}</div>
-      <div class="stat-sub">Last 90 days · all zones</div>
+      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
@@ -764,7 +757,7 @@ def render_html(data) -> str:
     <div class="stat-card sc-blue">
       <div class="stat-label">Total Intelligence Records</div>
       <div class="stat-num">{stats['total_records']}</div>
-      <div class="stat-sub">UNODC · Nigeria Police Force · 3 sources</div>
+      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
     </div>
   </div>
 
@@ -776,7 +769,11 @@ def render_html(data) -> str:
         <div class="panel-meta">Avg threat score</div>
       </div>
       <div class="map-wrap">{map_svg}</div>
-
+      <div class="psych-note">
+        <strong>Design note:</strong> Colour intensity scales with threat score, not raw event count.
+        High-fatality low-frequency zones are not underweighted — protecting against
+        "psychic numbing" (Slovic, 2007).
+      </div>
     </div>
 
     <div class="panel">
@@ -796,10 +793,6 @@ def render_html(data) -> str:
         <div class="panel-meta">Aggregated by zone & severity — no individual records</div>
       </div>
       <div class="alerts-wrap">{alert_rows}</div>
-      <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
-        <strong>Human labels:</strong> Analysts see "Armed confrontation" not "Battles" —
-        clinical distance increases error rate under stress (Klein, 1998).
-      </div>
     </div>
 
     <div class="panel">
@@ -811,8 +804,8 @@ def render_html(data) -> str:
     </div>
   </div>
 
-  <!-- TIMESERIES + EVENT TYPES + ACTORS -->
-  <div class="grid-3">
+  <!-- TIMESERIES + EVENT TYPES -->
+  <div class="grid-2">
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">📈 30-Day Event Trend</div>
@@ -829,14 +822,6 @@ def render_html(data) -> str:
       </div>
       <div class="et-wrap">{et_rows}</div>
     </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title">⚔️ Most Active Non-State Actors</div>
-        <div class="panel-meta">Excludes security forces</div>
-      </div>
-      <div class="actors-wrap">{actor_rows}</div>
-    </div>
   </div>
 
   <!-- ETL AUDIT LOG -->
@@ -846,12 +831,6 @@ def render_html(data) -> str:
       <div class="panel-meta" style="font-style:italic;color:var(--text3)">When was this data last updated?</div>
     </div>
     <div class="log-wrap">{etl_rows}</div>
-    <div class="psych-note" style="margin:12px 18px;border-radius:8px">
-      <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts
-      builds appropriate trust in the data — neither over-reliance nor dismissal.
-      Automation bias (Parasuraman & Manzey, 2010) is reduced when humans can see
-      how the intelligence was produced.
-    </div>
   </div>
 
 </main>

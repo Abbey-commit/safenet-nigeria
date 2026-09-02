@@ -315,7 +315,7 @@
   <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;padding:3px 10px;border:1px solid var(--border);border-radius:6px">PHASE 1 · CONFLICT INTELLIGENCE</span>
   <div class="header-meta">
     <div class="live-badge"><div class="live-dot"></div> SAMPLE DATA — DEMONSTRATION MODE</div>
-    <div class="gen-time">Generated 2026-09-02 11:53:18 WAT</div>
+    <div class="gen-time">Generated 2026-09-02 20:00:54 WAT</div>
   </div>
 </header>
 
@@ -349,7 +349,7 @@
     <div class="stat-card sc-red">
       <div class="stat-label">Conflict Events</div>
       <div class="stat-num">403</div>
-      <div class="stat-sub">Last 90 days · all zones</div>
+      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
@@ -364,7 +364,7 @@
     <div class="stat-card sc-blue">
       <div class="stat-label">Total Intelligence Records</div>
       <div class="stat-num">2743</div>
-      <div class="stat-sub">UNODC · Nigeria Police Force · 3 sources</div>
+      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
     </div>
   </div>
 
@@ -429,7 +429,11 @@
       <text x="130" y="252" text-anchor="middle" font-size="8"
             fill="rgba(255,255,255,0.4)" font-family="monospace">Avg. threat score by zone</text>
     </svg></div>
-
+      <div class="psych-note">
+        <strong>Design note:</strong> Colour intensity scales with threat score, not raw event count.
+        High-fatality low-frequency zones are not underweighted — protecting against
+        "psychic numbing" (Slovic, 2007).
+      </div>
     </div>
 
     <div class="panel">
@@ -447,9 +451,8 @@
             <div class="zone-bar" style="width:18.7%;background:#4CAF50"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:#4CAF50;font-weight:600">Risk score: 18.7%</span>
+            <span style="color:#4CAF50;font-weight:600">18.7% risk score</span>
           </div>
-
         </div>
         <div class="zone-card">
           <div class="zone-head">
@@ -460,9 +463,8 @@
             <div class="zone-bar" style="width:15.8%;background:#4CAF50"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:#4CAF50;font-weight:600">Risk score: 15.8%</span>
+            <span style="color:#4CAF50;font-weight:600">15.8% risk score</span>
           </div>
-
         </div>
         <div class="zone-card">
           <div class="zone-head">
@@ -473,9 +475,8 @@
             <div class="zone-bar" style="width:15.5%;background:#4CAF50"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:#4CAF50;font-weight:600">Risk score: 15.5%</span>
+            <span style="color:#4CAF50;font-weight:600">15.5% risk score</span>
           </div>
-
         </div>
         <div class="zone-card">
           <div class="zone-head">
@@ -486,9 +487,8 @@
             <div class="zone-bar" style="width:12.9%;background:#4CAF50"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:#4CAF50;font-weight:600">Risk score: 12.9%</span>
+            <span style="color:#4CAF50;font-weight:600">12.9% risk score</span>
           </div>
-
         </div>
         <div class="zone-card">
           <div class="zone-head">
@@ -499,9 +499,8 @@
             <div class="zone-bar" style="width:12.7%;background:#4CAF50"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:#4CAF50;font-weight:600">Risk score: 12.7%</span>
+            <span style="color:#4CAF50;font-weight:600">12.7% risk score</span>
           </div>
-
         </div>
         <div class="zone-card">
           <div class="zone-head">
@@ -512,9 +511,8 @@
             <div class="zone-bar" style="width:12.3%;background:#4CAF50"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:#4CAF50;font-weight:600">Risk score: 12.3%</span>
+            <span style="color:#4CAF50;font-weight:600">12.3% risk score</span>
           </div>
-
         </div></div>
     </div>
   </div>
@@ -617,10 +615,6 @@
             <div class="alert-sub">1 incidents this week · 1 fatalities</div>
           </div>
         </div></div>
-      <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
-        <strong>Human labels:</strong> Analysts see "Armed confrontation" not "Battles" —
-        clinical distance increases error rate under stress (Klein, 1998).
-      </div>
     </div>
 
     <div class="panel">
@@ -702,8 +696,8 @@
     </div>
   </div>
 
-  <!-- TIMESERIES + EVENT TYPES + ACTORS -->
-  <div class="grid-3">
+  <!-- TIMESERIES + EVENT TYPES -->
+  <div class="grid-2">
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">📈 30-Day Event Trend</div>
@@ -762,56 +756,6 @@
           <span class="et-pct">12%</span>
         </div></div>
     </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title">⚔️ Most Active Non-State Actors</div>
-        <div class="panel-meta">Excludes security forces</div>
-      </div>
-      <div class="actors-wrap">
-        <div class="actor-row">
-          <span class="actor-name">Unknown Armed Group</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:100%"></div>
-          </div>
-          <span class="actor-count">86</span>
-        </div>
-        <div class="actor-row">
-          <span class="actor-name">ISWAP</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:33%"></div>
-          </div>
-          <span class="actor-count">28</span>
-        </div>
-        <div class="actor-row">
-          <span class="actor-name">CJTF (Civilian Joint Task Force)</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:30%"></div>
-          </div>
-          <span class="actor-count">26</span>
-        </div>
-        <div class="actor-row">
-          <span class="actor-name">Yan Daba</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:26%"></div>
-          </div>
-          <span class="actor-count">22</span>
-        </div>
-        <div class="actor-row">
-          <span class="actor-name">Yan Bindiga</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:26%"></div>
-          </div>
-          <span class="actor-count">22</span>
-        </div>
-        <div class="actor-row">
-          <span class="actor-name">Farmers/Herders</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:26%"></div>
-          </div>
-          <span class="actor-count">22</span>
-        </div></div>
-    </div>
   </div>
 
   <!-- ETL AUDIT LOG -->
@@ -836,12 +780,6 @@
           <span style="font-size:12px;color:var(--text2)">403 records checked</span>
           <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
         </div></div>
-    <div class="psych-note" style="margin:12px 18px;border-radius:8px">
-      <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts
-      builds appropriate trust in the data — neither over-reliance nor dismissal.
-      Automation bias (Parasuraman & Manzey, 2010) is reduced when humans can see
-      how the intelligence was produced.
-    </div>
   </div>
 
 </main>
