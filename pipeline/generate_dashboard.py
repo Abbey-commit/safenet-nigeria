@@ -318,12 +318,9 @@ def render_html(data) -> str:
             <div class="zone-bar" style="width:{bar_w}%;background:{col}"></div>
           </div>
           <div class="zone-stats">
-            <span>{z['total_events']} events</span>
-            <span style="color:#FF4D4D">{z['critical_events']} critical</span>
-            <span>{z['total_fatalities']} fatalities</span>
-            <span style="color:{col};font-weight:600">{z['risk_pct']}%</span>
+            <span style="color:{col};font-weight:600">Risk score: {z['risk_pct']}%</span>
           </div>
-          <div class="zone-actor">Top actor: <em>{z.get('top_actor','Unknown')}</em></div>
+
         </div>"""
 
     # Build recent-activity rows — aggregated by zone + severity only.
