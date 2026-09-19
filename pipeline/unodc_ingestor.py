@@ -152,29 +152,68 @@ class UNODCIngestor:
 
     def _fetch_live(self, years_back: int) -> pd.DataFrame:
         """
-        Fetches from UNODC data portal.
-        UNODC provides CSV downloads — we parse them directly.
+        Fetches from UNODC data portal (Intentional Homicide dataset).
+
+        Note: this is a national-level, homicide-only dataset — not
+        state-by-state, and not covering other crime categories. That's
+        a real coverage limitation, not a bug. Nigeria has only 3
+        reporting years available (2016, 2019, 2023) as of the last
+        check — sparse, but genuinely live UNODC data.
         """
         print("[UNODCIngestor] Fetching live UNODC data for Nigeria...")
 
-        # UNODC homicide dataset — most reliable Nigeria data
+        # Correct current URL, confirmed against the live "Download data"
+        # link on https://data.unodc.org/datareport/hom-victim
         url = (
-            "https://dataunodc.un.org/sites/dataunodc.un.org/files/"
-            "data_cts_intentional_homicide.xlsx"
+            "https://data.unodc.org/sites/dataportal.unodc.org/files/"
+            "2026-07/data_cts_intentional_homicide.xlsx"
         )
 
-        try:
-            resp = requests.get(url, timeout=30)
-            resp.raise_for_status()
-            df_raw = pd.read_excel(io.BytesIO(resp.content), engine="openpyxl")
+        # UNODC's server appears to block/redirect requests with no
+        # User-Agent (returns an HTML page instead of the file, which
+        # then fails as "not a zip file" when pandas tries to read it
+        # as .xlsx). A standard browser UA avoids this.
+        headers = {
+            "User-Agent": (
+                "Mozilla/5.0 (Windows NT 10.0; Win64; x64) "
+                "AppleWebKit/537.36 (KHTML, like Gecko) "
+                "Chrome/124.0.0.0 Safari/537.36"
+            )
+        }
 
-            # Filter for Nigeria
-            df_nga = df_raw[
-                df_raw["Iso3_code"] == NIGERIA_ISO
-            ].copy()
+        try:
+            resp = requests.get(url, headers=headers, timeout=30)
+            resp.raise_for_status()
+
+            # Guard: confirm we actually got a spreadsheet, not an
+            # HTML error/redirect page, before handing it to pandas.
+            content_type = resp.headers.get("Content-Type", "")
+            if "html" in content_type.lower() or not resp.content.startswith(b"PK"):
+                raise ValueError(
+                    f"Expected an .xlsx file but got content-type "
+                    f"'{content_type}' ({len(resp.content)} bytes). "
+                    f"UNODC's download link may have changed — check "
+                    f"https://data.unodc.org/datareport/hom-victim"
+                )
+
+            df_raw = pd.read_excel(io.BytesIO(resp.content), engine="openpyxl", header=2)
+
+            # Filter for Nigeria using ISO3 code — this dataset has one,
+            # unlike the violent-and-sexual-crime sheet.
+            df_nga = df_raw[df_raw["Iso3_code"] == NIGERIA_ISO].copy()
 
             if df_nga.empty:
-                raise ValueError("No Nigeria data found in UNODC dataset")
+                raise ValueError("No Nigeria data found in UNODC homicide dataset")
+
+            # Keep only the aggregate (Sex=Total, Age=Total) rows —
+            # otherwise Male/Female breakdowns would double- or
+            # triple-count alongside the total.
+            df_nga = df_nga[
+                (df_nga["Sex"] == "Total") & (df_nga["Age"] == "Total")
+            ]
+
+            if df_nga.empty:
+                raise ValueError("Nigeria rows found but none at Sex=Total/Age=Total level")
 
             print(f"[UNODCIngestor] Raw records: {len(df_nga)}")
             return self._normalise_live(df_nga)
@@ -253,31 +292,46 @@ class UNODCIngestor:
         return self._normalise(df)
 
     def _normalise_live(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Normalise live UNODC data to SafeNet schema."""
+        """
+        Normalise live UNODC homicide data to SafeNet schema.
+
+        Source shape (filtered to Sex=Total, Age=Total already, in
+        _fetch_live): Iso3_code, Country, Region, Subregion, Indicator,
+        Dimension, Category, Sex, Age, Year, Unit of measurement,
+        VALUE, Source.
+
+        Each year has two rows — one with Unit='Counts', one with
+        Unit='Rate per 100,000 population' — merged here into a single
+        record per year with both fields populated.
+        """
+        counts = df[df["Unit of measurement"] == "Counts"][["Year", "VALUE"]]
+        counts = counts.rename(columns={"VALUE": "count"})
+
+        rates = df[df["Unit of measurement"] == "Rate per 100,000 population"][["Year", "VALUE"]]
+        rates = rates.rename(columns={"VALUE": "rate_per_100k"})
+
+        merged = pd.merge(counts, rates, on="Year", how="outer")
+
+        meta = UNODC_CATEGORIES["Intentional homicide"]
         normalised = []
-        for _, row in df.iterrows():
-            category = str(row.get("Indicator", "Unknown"))
-            meta = UNODC_CATEGORIES.get(
-                category,
-                {"sector": "General Security",
-                 "human_label": category,
-                 "severity": "MEDIUM",
-                 "description": "Crime statistic"}
-            )
+        for _, row in merged.iterrows():
+            year = row.get("Year", 0)
             normalised.append({
-                "record_id":     f"UNODC_{row.get('Year', '')}_{category[:8]}",
+                "record_id":     f"UNODC_{year}_homicide",
                 "source":        "UNODC",
-                "year":          row.get("Year", 0),
-                "category":      category,
+                "year":          year,
+                "category":      "Intentional homicide",
                 "sector":        meta["sector"],
                 "human_label":   meta["human_label"],
                 "severity":      meta["severity"],
                 "description":   meta["description"],
                 "country":       "Nigeria",
                 "zone":          "National",
-                "state":         row.get("Region", "National"),
-                "count":         pd.to_numeric(row.get("Value", 0), errors="coerce") or 0,
-                "rate_per_100k": pd.to_numeric(row.get("Rate", 0), errors="coerce") or 0,
+                "state":         "National",  # this dataset has no
+                                               # Nigerian state-level
+                                               # breakdown
+                "count":         pd.to_numeric(row.get("count", 0), errors="coerce") or 0,
+                "rate_per_100k": pd.to_numeric(row.get("rate_per_100k", 0), errors="coerce") or 0,
                 "population":    0,
                 "data_type":     "annual_statistic",
                 "ingested_at":   datetime.datetime.now().isoformat(),
