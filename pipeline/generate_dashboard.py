@@ -331,8 +331,12 @@ def render_html(data) -> str:
     </div>"""
 
     severity_color = {"CRITICAL": "#FF4D4D", "HIGH": "#FF8C42", "MEDIUM": "#FFB830", "LOW": "#4CAF50"}
-    trend_arrow = {"RISING": "↑", "DECLINING": "↓", "STABLE": "→"}
-    trend_color = {"RISING": "#FF4D4D", "DECLINING": "#4CAF50", "STABLE": "#FFB830"}
+    trend_arrow = {"RISING": "↑", "DECLINING": "↓", "STABLE": "→",
+                   "NO_RECENT_DATA": "⋯", "NEW_ACTIVITY": "＋"}
+    trend_color = {"RISING": "#FF4D4D", "DECLINING": "#4CAF50", "STABLE": "#FFB830",
+                   "NO_RECENT_DATA": "#394558", "NEW_ACTIVITY": "#3B9EFF"}
+    trend_label = {"RISING": "RISING", "DECLINING": "DECLINING", "STABLE": "STABLE",
+                   "NO_RECENT_DATA": "NO RECENT DATA", "NEW_ACTIVITY": "NEW ACTIVITY"}
 
     map_svg = build_nigeria_map_svg(data["states"])
     ts_svg = build_timeseries_svg(timeseries)
@@ -345,23 +349,23 @@ def render_html(data) -> str:
                                   "MEDIUM" if z["risk_pct"] > 20 else "LOW", "#666")
         arrow = trend_arrow.get(z.get("trend_7d", "STABLE"), "→")
         tcol = trend_color.get(z.get("trend_7d", "STABLE"), "#FFB830")
+        tlabel = trend_label.get(z.get("trend_7d", "STABLE"), "STABLE")
         bar_w = min(100, z.get("risk_pct", 0))
+        # ACLED compliance: risk score + trend ONLY. No event/critical/
+        # fatality counts, no actor name — those combined with zone
+        # identity are what ACLED flagged as non-transformative.
         zone_cards += f"""
         <div class="zone-card">
           <div class="zone-head">
             <span class="zone-name">{z['zone']}</span>
-            <span class="trend-badge" style="color:{tcol}">{arrow} {z.get('trend_7d','STABLE')}</span>
+            <span class="trend-badge" style="color:{tcol}">{arrow} {tlabel}</span>
           </div>
           <div class="zone-bar-wrap">
             <div class="zone-bar" style="width:{bar_w}%;background:{col}"></div>
           </div>
           <div class="zone-stats">
-            <span>{z['total_events']} events</span>
-            <span style="color:#FF4D4D">{z['critical_events']} critical</span>
-            <span>{z['total_fatalities']} fatalities</span>
-            <span style="color:{col};font-weight:600">{z['risk_pct']}%</span>
+            <span style="color:{col};font-weight:600">{z['risk_pct']}% risk score</span>
           </div>
-          <div class="zone-actor">Top actor: <em>{z.get('top_actor','Unknown')}</em></div>
         </div>"""
 
     # Build alert rows

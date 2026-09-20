@@ -204,11 +204,19 @@ class SafeNetDB:
         return {"inserted": inserted, "updated": updated}
 
     def refresh_zone_summaries(self):
-        """Recompute zone-level aggregates. Clears old rows first to prevent duplicates."""
+        """Recompute zone-level aggregates.
+
+        This table reflects CURRENT state only — it is not a historical
+        archive. Previously this only deleted *today's* snapshot before
+        inserting, which meant running the pipeline on different
+        calendar days silently stacked up duplicate rows per zone
+        (2 runs on 2 days = every zone shown twice, etc). Now it clears
+        ALL prior rows for the zones being refreshed, regardless of
+        what day they were written.
+        """
         today = datetime.date.today().isoformat()
         with self._connect() as conn:
-            # Delete today's summaries before recomputing — prevents duplicate rows
-            conn.execute("DELETE FROM zone_threat_summary WHERE snapshot_date = ?", (today,))
+            conn.execute("DELETE FROM zone_threat_summary")
             zones = [r[0] for r in conn.execute(
                 "SELECT DISTINCT zone FROM conflict_events WHERE zone IS NOT NULL"
             ).fetchall()]
@@ -234,13 +242,20 @@ class SafeNetDB:
                 top_actor = Counter(r["actor1"] for r in rows).most_common(1)[0][0]
                 top_type = Counter(r["event_type"] for r in rows).most_common(1)[0][0]
 
-                # Trend: compare last 7d vs prior 7d event count
+                # Trend: compare last 7d vs prior 7d event count.
+                # IMPORTANT: "no prior-period events" and "genuinely
+                # stable" are different situations — this is only
+                # meaningful while data is actively refreshing (i.e.
+                # while ACLED is live, not paused). Distinguish them
+                # explicitly rather than defaulting both to STABLE.
                 recent = sum(1 for r in rows
                              if (datetime.date.today() - datetime.date.fromisoformat(r["event_date"][:10])).days <= 7)
                 prior = sum(1 for r in rows
                             if 7 < (datetime.date.today() - datetime.date.fromisoformat(r["event_date"][:10])).days <= 14)
-                if prior == 0:
-                    trend = "STABLE"
+                if recent == 0 and prior == 0:
+                    trend = "NO_RECENT_DATA"
+                elif prior == 0:
+                    trend = "NEW_ACTIVITY"
                 elif recent > prior * 1.2:
                     trend = "RISING"
                 elif recent < prior * 0.8:
@@ -269,10 +284,12 @@ class SafeNetDB:
         print(f"[SafeNetDB] Zone summaries refreshed for {len(zones)} zones")
 
     def refresh_state_summaries(self):
+        """Recompute state-level aggregates. Same fix as zones: clears
+        ALL prior rows (not just today's) since this reflects current
+        state, not a historical archive."""
         today = datetime.date.today().isoformat()
         with self._connect() as conn:
-            # Delete today's summaries before recomputing — prevents duplicate rows
-            conn.execute("DELETE FROM state_threat_summary WHERE snapshot_date = ?", (today,))
+            conn.execute("DELETE FROM state_threat_summary")
             states = [r[0] for r in conn.execute(
                 "SELECT DISTINCT admin1 FROM conflict_events WHERE admin1 IS NOT NULL"
             ).fetchall()]
@@ -347,8 +364,8 @@ class ETLPipeline:
     In production this runs on Apache Airflow daily at 06:00 WAT.
     """
 
-    def __init__(self, api_key=None, email=None, password=None):
-        self.ingestor = ACLEDIngestor(email=email, password=password)
+    def __init__(self, api_key=None, email=None):
+        self.ingestor = ACLEDIngestor(api_key=api_key, email=email)
         self.db = SafeNetDB()
 
     def run(self, days_back: int = 90, run_type: str = "full_refresh") -> dict:
