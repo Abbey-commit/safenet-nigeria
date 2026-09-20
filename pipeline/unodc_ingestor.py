@@ -450,9 +450,23 @@ class UNODCDBStore:
             conn.executescript(self.SCHEMA)
         print("[UNODCDBStore] Schema initialised")
 
-    def upsert(self, df: pd.DataFrame) -> dict:
+    def upsert(self, df: pd.DataFrame, is_live: bool = False) -> dict:
         inserted = updated = 0
         with self._connect() as conn:
+            if is_live:
+                # Purge leftover synthetic rows the first time real data
+                # arrives. Synthetic record_ids look like "UNODC50001";
+                # live ones look like "UNODC_2023_homicide" — different
+                # formats mean they never overwrite each other via
+                # ON CONFLICT, so without this, fake and real data
+                # silently accumulate together forever.
+                purged = conn.execute("""
+                    DELETE FROM unodc_crime_stats
+                    WHERE record_id GLOB 'UNODC[0-9]*'
+                """).rowcount
+                if purged:
+                    print(f"[UNODCDBStore] Purged {purged} leftover synthetic records")
+
             for _, row in df.iterrows():
                 try:
                     conn.execute("""

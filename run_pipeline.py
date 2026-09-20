@@ -71,7 +71,7 @@ def main():
         df = ingestor.fetch(years_back=5)
         summary = ingestor.get_summary(df)
         store = UNODCDBStore(db_path)
-        counts = store.upsert(df)
+        counts = store.upsert(df, is_live=ingestor.use_live)
         store.refresh_sector_summary()
         store.log_run(ingestor.use_live, len(df), counts["inserted"])
         print(f"[UNODC] {summary['total_records']} records across "
