@@ -481,6 +481,33 @@ class UNODCDBStore:
                     updated += 1
         return {"inserted": inserted, "updated": updated}
 
+    def log_run(self, is_live: bool, fetched: int, inserted: int):
+        """
+        Records this UNODC run into the SAME etl_run_log table ACLED
+        uses, so the dashboard's live/sample badge can reflect UNODC's
+        real status too, not just ACLED's. Without this, UNODC going
+        live is invisible to the public-facing status indicator.
+        """
+        data_source = "UNODC Live" if is_live else "UNODC Synthetic"
+        with self._connect() as conn:
+            conn.execute("""
+                CREATE TABLE IF NOT EXISTS etl_run_log (
+                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_at TEXT, run_type TEXT, records_fetched INTEGER,
+                    records_inserted INTEGER, duration_seconds REAL,
+                    status TEXT, error_message TEXT, data_source TEXT
+                )
+            """)
+            conn.execute("""
+                INSERT INTO etl_run_log
+                    (run_at, run_type, records_fetched, records_inserted,
+                     duration_seconds, status, error_message, data_source)
+                VALUES (?,?,?,?,?,?,?,?)
+            """, (
+                datetime.datetime.now().isoformat(), "UNODC",
+                fetched, inserted, 0.0, "SUCCESS", None, data_source,
+            ))
+
     def refresh_sector_summary(self):
         """Recompute sector-level aggregates. Clears old rows first."""
         today = datetime.date.today().isoformat()

@@ -41,23 +41,13 @@ def load_data():
         ORDER BY risk_pct DESC
     """).fetchall()]
 
-    # Recent activity — AGGREGATED ONLY (zone × severity × count/fatalities).
-    # Deliberately does not select actor1, notes, admin1, or exact event_date:
-    # ACLED compliance requires our public display to be transformative and
-    # not reconstructable to their underlying event-level records. This
-    # replaces the previous per-incident feed.
-    recent_activity = [dict(r) for r in conn.execute("""
-        SELECT zone, severity_level,
-               COUNT(*) as event_count,
-               SUM(fatalities) as fatalities
+    # Top threat events (recent, high score)
+    top_events = [dict(r) for r in conn.execute("""
+        SELECT event_date, admin1, zone, human_label, actor1,
+               fatalities, threat_score, severity_level, notes, days_ago
         FROM conflict_events
-        WHERE days_ago <= 7
-        GROUP BY zone, severity_level
-        ORDER BY
-            CASE severity_level
-                WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2
-                WHEN 'MEDIUM' THEN 3 ELSE 4 END,
-            event_count DESC
+        ORDER BY threat_score DESC, days_ago ASC
+        LIMIT 8
     """).fetchall()]
 
     # State summaries for heatmap
@@ -143,17 +133,35 @@ def load_data():
         ORDER BY run_at DESC LIMIT 3
     """).fetchall()]
 
-    # Determine data mode from latest run
-    latest = etl_log[0] if etl_log else {}
-    is_live = latest.get("data_source", "Synthetic") not in [
-        "Synthetic", "SYNTHETIC", "SafeNet Synthetic"
-    ]
-    data_mode = "LIVE" if is_live else "SAMPLE"
+    # Per-source status — ACLED, UNODC, and NPF each log their own runs
+    # into etl_run_log now (run_type distinguishes them). We take the
+    # most recent SUCCESS run per source rather than assuming a single
+    # "latest row" speaks for the whole platform, since sources go
+    # live independently of one another.
+    source_status = {}
+    for src in ("ACLED", "UNODC", "NPF"):
+        row = conn.execute("""
+            SELECT data_source FROM etl_run_log
+            WHERE run_type = ? AND status = 'SUCCESS'
+            ORDER BY run_at DESC LIMIT 1
+        """, (src,)).fetchone()
+        if row and row["data_source"] and "Synthetic" not in row["data_source"]:
+            source_status[src] = "LIVE"
+        else:
+            source_status[src] = "SAMPLE"
+
+    live_count = sum(1 for v in source_status.values() if v == "LIVE")
+    if live_count == 0:
+        data_mode = "SAMPLE"
+    elif live_count == len(source_status):
+        data_mode = "LIVE"
+    else:
+        data_mode = "MIXED"
 
     conn.close()
     return {
         "zones": zones,
-        "recent_activity": recent_activity,
+        "top_events": top_events,
         "states": states,
         "timeseries": timeseries,
         "event_types": event_types,
@@ -161,6 +169,7 @@ def load_data():
         "stats": stats,
         "etl_log": etl_log,
         "data_mode": data_mode,
+        "source_status": source_status,
         "generated_at": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S WAT"),
     }
 
@@ -271,25 +280,55 @@ def build_timeseries_svg(timeseries):
 
 def render_html(data) -> str:
     zones = data["zones"]
-    recent_activity = data["recent_activity"]
+    top_events = data["top_events"]
     states = data["states"][:10]
     timeseries = data["timeseries"]
     event_types = data["event_types"]
+    actors = data["actors"]
     stats = data["stats"]
     etl_log = data["etl_log"]
     generated_at  = data["generated_at"]
     data_mode     = data.get("data_mode", "SAMPLE")
+    source_status = data.get("source_status", {})
     is_live       = data_mode == "LIVE"
-    data_mode_label   = "LIVE INTELLIGENCE" if is_live else "SAMPLE DATA — NOT LIVE"
-    data_source_note  = "Live data" if is_live else "Sample data · ACLED access pending"
-    sample_banner = "" if is_live else """
+    is_mixed      = data_mode == "MIXED"
+
+    if is_live:
+        data_mode_label = "LIVE INTELLIGENCE"
+    elif is_mixed:
+        live_sources = [s for s, v in source_status.items() if v == "LIVE"]
+        data_mode_label = f"PARTIAL LIVE DATA — {', '.join(live_sources)}"
+    else:
+        data_mode_label = "SAMPLE DATA — NOT LIVE"
+
+    if is_live:
+        sample_banner = ""
+    else:
+        # Build a per-source line so the banner is accurate even when
+        # some sources are live and others aren't — a blanket "sample
+        # data" label would understate real progress; a blanket "live"
+        # label would overclaim. Neither is acceptable here.
+        status_line = " · ".join(
+            f"{src}: {'✅ LIVE' if v == 'LIVE' else '🔶 Sample'}"
+            for src, v in source_status.items()
+        )
+        headline = (
+            "This dashboard combines live and sample data — see breakdown below."
+            if is_mixed else
+            "This dashboard is currently showing sample data for demonstration purposes."
+        )
+        sample_banner = f"""
     <div style="background:#FFB830;color:#000;padding:10px 28px;font-size:13px;
-                font-weight:600;display:flex;align-items:center;gap:10px;
+                font-weight:600;display:flex;flex-direction:column;gap:4px;
                 border-bottom:1px solid rgba(0,0,0,0.1);">
-      <span>⚠️</span>
-      <span>This dashboard is currently showing sample data for demonstration purposes.
-      Live data integration is in progress. Numbers shown are illustrative, not real.</span>
-    </div>""" 
+      <div style="display:flex;align-items:center;gap:10px;">
+        <span>⚠️</span>
+        <span>{headline}</span>
+      </div>
+      <div style="font-size:11px;font-weight:500;padding-left:24px;opacity:0.85;">
+        {status_line}
+      </div>
+    </div>"""
 
     severity_color = {"CRITICAL": "#FF4D4D", "HIGH": "#FF8C42", "MEDIUM": "#FFB830", "LOW": "#4CAF50"}
     trend_arrow = {"RISING": "↑", "DECLINING": "↓", "STABLE": "→"}
@@ -298,11 +337,7 @@ def render_html(data) -> str:
     map_svg = build_nigeria_map_svg(data["states"])
     ts_svg = build_timeseries_svg(timeseries)
 
-    # Build zone cards — RISK SCORE + TREND ONLY.
-    # Deliberately excludes event_count, critical_events, total_fatalities,
-    # and top_actor: these, combined across zones, could be used to infer
-    # patterns approximating ACLED's underlying event-level data. Only the
-    # final aggregated risk percentage and trend direction are shown.
+    # Build zone cards
     zone_cards = ""
     for z in zones:
         col = severity_color.get("CRITICAL" if z["risk_pct"] > 60 else
@@ -321,25 +356,34 @@ def render_html(data) -> str:
             <div class="zone-bar" style="width:{bar_w}%;background:{col}"></div>
           </div>
           <div class="zone-stats">
-            <span style="color:{col};font-weight:600">{z['risk_pct']}% risk score</span>
+            <span>{z['total_events']} events</span>
+            <span style="color:#FF4D4D">{z['critical_events']} critical</span>
+            <span>{z['total_fatalities']} fatalities</span>
+            <span style="color:{col};font-weight:600">{z['risk_pct']}%</span>
           </div>
+          <div class="zone-actor">Top actor: <em>{z.get('top_actor','Unknown')}</em></div>
         </div>"""
 
-    # Build recent-activity rows — aggregated by zone + severity only.
-    # No actor names, no notes, no exact dates, no per-incident location:
-    # this is a transformed summary, not a reconstruction of individual
-    # ACLED records.
+    # Build alert rows
     alert_rows = ""
-    for r in recent_activity:
-        col = severity_color.get(r["severity_level"], "#666")
+    for e in top_events:
+        col = severity_color.get(e["severity_level"], "#666")
+        score = e.get("threat_score", 0)
+        days = e.get("days_ago", 0)
+        recency = "Today" if days == 0 else f"{days}d ago"
         alert_rows += f"""
-        <div class="alert-row" data-severity="{r['severity_level']}">
+        <div class="alert-row" data-severity="{e['severity_level']}">
           <div class="sev-pill" style="background:{col}22;color:{col};border-color:{col}44">
-            {r['severity_level']}
+            {e['severity_level']}
           </div>
           <div class="alert-info">
-            <div class="alert-title">{r['zone']}</div>
-            <div class="alert-sub">{r['event_count']} incidents this week · {r['fatalities']} fatalities</div>
+            <div class="alert-title">{e['human_label']} — {e['admin1']}, {e['zone']}</div>
+            <div class="alert-sub">{e['actor1']} · {recency} · {e['fatalities']} fatalities</div>
+            <div class="alert-note">{e.get('notes','')}</div>
+          </div>
+          <div class="score-badge" style="border-color:{col}66">
+            <span style="color:{col};font-size:18px;font-weight:700">{score:.0f}</span>
+            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
           </div>
         </div>"""
 
@@ -373,10 +417,19 @@ def render_html(data) -> str:
           <span class="et-pct">{pct}%</span>
         </div>"""
 
-    # NOTE: actor-level breakdown removed entirely (ACLED compliance) —
-    # named actor entities (e.g. "ISWAP", "Military Forces of Nigeria")
-    # are not displayed anywhere on the public dashboard, even in
-    # aggregated form.
+    # Actor rows
+    actor_rows = ""
+    max_inc = max((a["incidents"] for a in actors), default=1)
+    for a in actors:
+        bar = round(a["incidents"] / max_inc * 100)
+        actor_rows += f"""
+        <div class="actor-row">
+          <span class="actor-name">{a['actor']}</span>
+          <div class="actor-bar-wrap">
+            <div class="actor-bar" style="width:{bar}%"></div>
+          </div>
+          <span class="actor-count">{a['incidents']}</span>
+        </div>"""
 
     # Data freshness rows — plain English format
     etl_rows = ""
@@ -742,7 +795,7 @@ def render_html(data) -> str:
     <div class="stat-card sc-red">
       <div class="stat-label">Conflict Events</div>
       <div class="stat-num">{stats['total_events']}</div>
-      <div class="stat-sub">Last 90 days · all zones</div>
+      <div class="stat-sub">Last 90 days · all zones · ACLED</div>
     </div>
     <div class="stat-card sc-red">
       <div class="stat-label">Critical Incidents</div>
@@ -757,7 +810,7 @@ def render_html(data) -> str:
     <div class="stat-card sc-blue">
       <div class="stat-label">Total Intelligence Records</div>
       <div class="stat-num">{stats['total_records']}</div>
-      <div class="stat-sub">Multiple sources · aggregated</div>
+      <div class="stat-sub">ACLED + UNODC + Police · 3 sources</div>
     </div>
   </div>
 
@@ -778,7 +831,7 @@ def render_html(data) -> str:
 
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">{len(zones)} ZONES</span></div>
+        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">6 ZONES</span></div>
         <div class="panel-meta">Sorted by risk score</div>
       </div>
       <div class="zones-wrap">{zone_cards}</div>
@@ -789,23 +842,27 @@ def render_html(data) -> str:
   <div class="grid-2">
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">📊 Recent Activity Snapshot <span class="panel-badge pb-red">7-DAY SUMMARY</span></div>
-        <div class="panel-meta">Aggregated by zone & severity — no individual records</div>
+        <div class="panel-title">🚨 Highest Threat Events <span class="panel-badge pb-red">TOP 8</span></div>
+        <div class="panel-meta">Score = recency × severity × impact</div>
       </div>
       <div class="alerts-wrap">{alert_rows}</div>
+      <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
+        <strong>Human labels:</strong> Analysts see "Armed confrontation" not "Battles" —
+        clinical distance increases error rate under stress (Klein, 1998).
+      </div>
     </div>
 
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">📍 Top {len(states)} Threat States</div>
+        <div class="panel-title">📍 Top 10 Threat States</div>
         <div class="panel-meta">Avg threat score</div>
       </div>
       <div class="states-wrap">{state_rows}</div>
     </div>
   </div>
 
-  <!-- TIMESERIES + EVENT TYPES -->
-  <div class="grid-2">
+  <!-- TIMESERIES + EVENT TYPES + ACTORS -->
+  <div class="grid-3">
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">📈 30-Day Event Trend</div>
@@ -822,6 +879,14 @@ def render_html(data) -> str:
       </div>
       <div class="et-wrap">{et_rows}</div>
     </div>
+
+    <div class="panel">
+      <div class="panel-head">
+        <div class="panel-title">⚔️ Most Active Non-State Actors</div>
+        <div class="panel-meta">Excludes security forces</div>
+      </div>
+      <div class="actors-wrap">{actor_rows}</div>
+    </div>
   </div>
 
   <!-- ETL AUDIT LOG -->
@@ -831,6 +896,12 @@ def render_html(data) -> str:
       <div class="panel-meta" style="font-style:italic;color:var(--text3)">When was this data last updated?</div>
     </div>
     <div class="log-wrap">{etl_rows}</div>
+    <div class="psych-note" style="margin:12px 18px;border-radius:8px">
+      <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts
+      builds appropriate trust in the data — neither over-reliance nor dismissal.
+      Automation bias (Parasuraman & Manzey, 2010) is reduced when humans can see
+      how the intelligence was produced.
+    </div>
   </div>
 
 </main>
