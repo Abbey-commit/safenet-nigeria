@@ -28,7 +28,7 @@ except ImportError:
 
 sys.path.insert(0, os.path.dirname(__file__))
 
-from pipeline.database import ETLPipeline
+from pipeline.database import ETLPipeline, SafeNetDB
 from pipeline.unodc_ingestor import UNODCIngestor, UNODCDBStore
 from pipeline.npf_ingestor import NPFIngestor, NPFDBStore
 from pipeline.generate_dashboard import generate
@@ -101,6 +101,21 @@ def main():
         return summary
 
     npf_result = run_source("Nigeria Police Force Records", run_npf)
+
+    # ── REFRESH ZONE/STATE SUMMARIES ────────────────────────────
+    # IMPORTANT: this must run unconditionally, every time, regardless
+    # of whether ACLED succeeded, failed, or was paused/skipped above.
+    # Previously this only ran INSIDE ETLPipeline.run() (i.e. only as
+    # part of a successful ACLED fetch) — meaning pausing ACLED also
+    # silently stopped zone/state summaries from ever refreshing or
+    # deduplicating, even though conflict_events data still existed.
+    # Calling it here, directly, decouples it from ACLED's status.
+    print(f"\n{'━'*60}")
+    print(f"  REFRESHING ZONE & STATE SUMMARIES")
+    print(f"{'━'*60}")
+    _db = SafeNetDB(db_path)
+    _db.refresh_zone_summaries()
+    _db.refresh_state_summaries()
 
     # ── GENERATE DASHBOARD ────────────────────────────────────────
     print(f"\n{'━'*60}")
