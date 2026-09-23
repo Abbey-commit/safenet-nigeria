@@ -1,0 +1,50 @@
+name: Daily Pipeline Refresh
+
+# Fixes a real gap: previously the pipeline only ran when someone
+# manually typed `python run_pipeline.py` in a Codespace. If nobody
+# did that for weeks, the "Data Sync Log" on the dashboard silently
+# went stale with no indication anything was wrong — it looked like
+# the platform, not just the lack of automation, had failed. This
+# workflow makes refreshes actually automatic, so the log's timestamps
+# genuinely reflect an active, ongoing process rather than manual,
+# irregular check-ins.
+
+on:
+  schedule:
+    # Runs once daily at 03:00 UTC (~04:00 WAT). Adjust as needed —
+    # ACLED is currently paused, so this mainly keeps UNODC fresh and
+    # keeps the sync log itself honest about being an active process.
+    - cron: '0 3 * * *'
+  workflow_dispatch: {}   # allows manually triggering a run from the Actions tab
+
+permissions:
+  contents: write
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run pipeline
+        env:
+          ACLED_EMAIL: ${{ secrets.ACLED_EMAIL }}
+          ACLED_PASSWORD: ${{ secrets.ACLED_PASSWORD }}
+        run: python run_pipeline.py
+
+      - name: Commit and push if anything changed
+        run: |
+          git config user.name "SafeNet Automated Refresh"
+          git config user.email "actions@github.com"
+          git add data/safenet.db docs/index.html dashboard/index.html
+          git diff --quiet --cached || git commit -m "Automated daily data refresh"
+          git push

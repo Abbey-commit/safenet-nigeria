@@ -501,25 +501,40 @@ class UNODCDBStore:
         uses, so the dashboard's live/sample badge can reflect UNODC's
         real status too, not just ACLED's. Without this, UNODC going
         live is invisible to the public-facing status indicator.
+
+        IMPORTANT: the CREATE TABLE below must exactly match the
+        canonical schema in database.py's SafeNetDB, including
+        records_updated. Since ACLED is currently paused, this UNODC
+        write is often the FIRST thing to touch etl_run_log — if this
+        schema were incomplete, ACLED's own logger would later crash
+        with "no such column: records_updated" the moment it's
+        re-enabled, since it explicitly inserts into that column.
         """
         data_source = "UNODC Live" if is_live else "UNODC Synthetic"
         with self._connect() as conn:
             conn.execute("""
                 CREATE TABLE IF NOT EXISTS etl_run_log (
-                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                    run_at TEXT, run_type TEXT, records_fetched INTEGER,
-                    records_inserted INTEGER, duration_seconds REAL,
-                    status TEXT, error_message TEXT, data_source TEXT
+                    id                  INTEGER PRIMARY KEY AUTOINCREMENT,
+                    run_at              TEXT DEFAULT (datetime('now')),
+                    run_type            TEXT,
+                    records_fetched     INTEGER,
+                    records_inserted    INTEGER,
+                    records_updated     INTEGER,
+                    duration_seconds    REAL,
+                    status              TEXT,
+                    error_message       TEXT,
+                    data_source         TEXT
                 )
             """)
             conn.execute("""
                 INSERT INTO etl_run_log
                     (run_at, run_type, records_fetched, records_inserted,
-                     duration_seconds, status, error_message, data_source)
-                VALUES (?,?,?,?,?,?,?,?)
+                     records_updated, duration_seconds, status, error_message,
+                     data_source)
+                VALUES (?,?,?,?,?,?,?,?,?)
             """, (
                 datetime.datetime.now().isoformat(), "UNODC",
-                fetched, inserted, 0.0, "SUCCESS", None, data_source,
+                fetched, inserted, 0, 0.0, "SUCCESS", None, data_source,
             ))
 
     def refresh_sector_summary(self):

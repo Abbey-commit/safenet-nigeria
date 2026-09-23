@@ -184,11 +184,22 @@ def load_data():
     }
 
 
-def build_nigeria_map_svg(states_data):
+def build_nigeria_map_svg(zones_data):
     """
     Renders a schematic Nigeria map with state zones colour-coded by threat.
     Uses representative zone polygons — not exact boundaries.
     Zone blocks positioned to approximate Nigeria's geography.
+
+    IMPORTANT: takes zones_data (from zone_threat_summary, same source as
+    the "Zone Threat Breakdown" panel) rather than deriving its own score
+    from states_data. Previously this recomputed a SEPARATE score — the
+    average of each state's avg_threat_score within a zone (a two-stage
+    "average of averages") — which is mathematically different from the
+    Zone Threat Breakdown's risk_pct (a direct average of event-level
+    threat_score across the zone). The two numbers looked like the same
+    metric shown twice but were actually two different computations that
+    silently drifted apart. Using the same source here guarantees the map
+    and the breakdown panel always agree.
     """
     zone_colors = {
         "Northwest":    "#FF4D4D",
@@ -198,13 +209,7 @@ def build_nigeria_map_svg(states_data):
         "SouthEast":    "#90EE90",
         "SouthWest":    "#3CB371",
     }
-    zone_scores = {}
-    for s in states_data:
-        z = s.get("zone", "Unknown")
-        if z not in zone_scores:
-            zone_scores[z] = []
-        zone_scores[z].append(s.get("avg_threat_score", 0))
-    zone_avg = {z: round(sum(v)/len(v), 1) for z, v in zone_scores.items() if v}
+    zone_avg = {z["zone"]: z.get("risk_pct", 0) for z in zones_data}
 
     # Schematic zone blocks [x, y, w, h, zone_name]
     blocks = [
@@ -347,7 +352,7 @@ def render_html(data) -> str:
     trend_label = {"RISING": "RISING", "DECLINING": "DECLINING", "STABLE": "STABLE",
                    "NO_RECENT_DATA": "NO RECENT DATA", "NEW_ACTIVITY": "NEW ACTIVITY"}
 
-    map_svg = build_nigeria_map_svg(data["states"])
+    map_svg = build_nigeria_map_svg(data["zones"])
     ts_svg = build_timeseries_svg(timeseries)
 
     # Build zone cards
@@ -821,17 +826,12 @@ def render_html(data) -> str:
         <div class="panel-meta">Avg threat score</div>
       </div>
       <div class="map-wrap">{map_svg}</div>
-      <div class="psych-note">
-        <strong>Design note:</strong> Colour intensity scales with threat score, not raw event count.
-        High-fatality low-frequency zones are not underweighted — protecting against
-        "psychic numbing" (Slovic, 2007).
-      </div>
     </div>
 
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">6 ZONES</span></div>
-        <div class="panel-meta">Sorted by risk score</div>
+        <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">{len(zones)} ZONES</span></div>
+        <div class="panel-meta">Sorted by risk score · trend shows direction, not severity — see 7-day snapshot below for severity</div>
       </div>
       <div class="zones-wrap">{zone_cards}</div>
     </div>
@@ -845,10 +845,6 @@ def render_html(data) -> str:
         <div class="panel-meta">Aggregated by zone & severity — no individual records</div>
       </div>
       <div class="alerts-wrap">{alert_rows}</div>
-      <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
-        <strong>Human labels:</strong> Analysts see "Armed confrontation" not "Battles" —
-        clinical distance increases error rate under stress (Klein, 1998).
-      </div>
     </div>
 
     <div class="panel">
@@ -883,16 +879,10 @@ def render_html(data) -> str:
   <!-- ETL AUDIT LOG -->
   <div class="panel">
     <div class="panel-head">
-      <div class="panel-title">✅ Data Freshness &amp; Update Log <span class="panel-badge pb-green">VERIFIED</span></div>
+      <div class="panel-title">🔄 Data Sync Log <span class="panel-badge pb-amber">SYNC STATUS</span></div>
       <div class="panel-meta" style="font-style:italic;color:var(--text3)">When was this data last updated?</div>
     </div>
     <div class="log-wrap">{etl_rows}</div>
-    <div class="psych-note" style="margin:12px 18px;border-radius:8px">
-      <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts
-      builds appropriate trust in the data — neither over-reliance nor dismissal.
-      Automation bias (Parasuraman & Manzey, 2010) is reduced when humans can see
-      how the intelligence was produced.
-    </div>
   </div>
 
 </main>
