@@ -42,12 +42,22 @@ def load_data():
     """).fetchall()]
 
     # Top threat events (recent, high score)
-    top_events = [dict(r) for r in conn.execute("""
-        SELECT event_date, admin1, zone, human_label, actor1,
-               fatalities, threat_score, severity_level, notes, days_ago
+    # Recent activity — AGGREGATED ONLY (zone x severity x count/fatalities).
+    # Deliberately does not select actor1, notes, admin1, or exact event_date:
+    # ACLED compliance requires the public display to be transformative and
+    # not reconstructable to their underlying event-level records.
+    recent_activity = [dict(r) for r in conn.execute("""
+        SELECT zone, severity_level,
+               COUNT(*) as event_count,
+               SUM(fatalities) as fatalities
         FROM conflict_events
-        ORDER BY threat_score DESC, days_ago ASC
-        LIMIT 8
+        WHERE days_ago <= 7
+        GROUP BY zone, severity_level
+        ORDER BY
+            CASE severity_level
+                WHEN 'CRITICAL' THEN 1 WHEN 'HIGH' THEN 2
+                WHEN 'MEDIUM' THEN 3 ELSE 4 END,
+            event_count DESC
     """).fetchall()]
 
     # State summaries for heatmap
@@ -161,7 +171,7 @@ def load_data():
     conn.close()
     return {
         "zones": zones,
-        "top_events": top_events,
+        "recent_activity": recent_activity,
         "states": states,
         "timeseries": timeseries,
         "event_types": event_types,
@@ -280,11 +290,10 @@ def build_timeseries_svg(timeseries):
 
 def render_html(data) -> str:
     zones = data["zones"]
-    top_events = data["top_events"]
+    recent_activity = data["recent_activity"]
     states = data["states"][:10]
     timeseries = data["timeseries"]
     event_types = data["event_types"]
-    actors = data["actors"]
     stats = data["stats"]
     etl_log = data["etl_log"]
     generated_at  = data["generated_at"]
@@ -368,26 +377,21 @@ def render_html(data) -> str:
           </div>
         </div>"""
 
-    # Build alert rows
+    # Build recent-activity rows — aggregated by zone + severity only.
+    # No actor names, no notes, no exact dates, no per-incident location:
+    # this is a transformed summary, not a reconstruction of individual
+    # ACLED records.
     alert_rows = ""
-    for e in top_events:
-        col = severity_color.get(e["severity_level"], "#666")
-        score = e.get("threat_score", 0)
-        days = e.get("days_ago", 0)
-        recency = "Today" if days == 0 else f"{days}d ago"
+    for r in recent_activity:
+        col = severity_color.get(r["severity_level"], "#666")
         alert_rows += f"""
-        <div class="alert-row" data-severity="{e['severity_level']}">
+        <div class="alert-row" data-severity="{r['severity_level']}">
           <div class="sev-pill" style="background:{col}22;color:{col};border-color:{col}44">
-            {e['severity_level']}
+            {r['severity_level']}
           </div>
           <div class="alert-info">
-            <div class="alert-title">{e['human_label']} — {e['admin1']}, {e['zone']}</div>
-            <div class="alert-sub">{e['actor1']} · {recency} · {e['fatalities']} fatalities</div>
-            <div class="alert-note">{e.get('notes','')}</div>
-          </div>
-          <div class="score-badge" style="border-color:{col}66">
-            <span style="color:{col};font-size:18px;font-weight:700">{score:.0f}</span>
-            <span style="font-size:10px;color:rgba(255,255,255,0.4)">/ 100</span>
+            <div class="alert-title">{r['zone']}</div>
+            <div class="alert-sub">{r['event_count']} incidents this week · {r['fatalities']} fatalities</div>
           </div>
         </div>"""
 
@@ -421,19 +425,10 @@ def render_html(data) -> str:
           <span class="et-pct">{pct}%</span>
         </div>"""
 
-    # Actor rows
-    actor_rows = ""
-    max_inc = max((a["incidents"] for a in actors), default=1)
-    for a in actors:
-        bar = round(a["incidents"] / max_inc * 100)
-        actor_rows += f"""
-        <div class="actor-row">
-          <span class="actor-name">{a['actor']}</span>
-          <div class="actor-bar-wrap">
-            <div class="actor-bar" style="width:{bar}%"></div>
-          </div>
-          <span class="actor-count">{a['incidents']}</span>
-        </div>"""
+    # NOTE: actor-level breakdown removed entirely (ACLED compliance) —
+    # named actor entities (e.g. "ISWAP", "Military Forces of Nigeria")
+    # are not displayed anywhere on the public dashboard, even in
+    # aggregated form.
 
     # Data freshness rows — plain English format
     etl_rows = ""
@@ -846,8 +841,8 @@ def render_html(data) -> str:
   <div class="grid-2">
     <div class="panel">
       <div class="panel-head">
-        <div class="panel-title">🚨 Highest Threat Events <span class="panel-badge pb-red">TOP 8</span></div>
-        <div class="panel-meta">Score = recency × severity × impact</div>
+        <div class="panel-title">📊 Recent Activity Snapshot <span class="panel-badge pb-red">7-DAY SUMMARY</span></div>
+        <div class="panel-meta">Aggregated by zone & severity — no individual records</div>
       </div>
       <div class="alerts-wrap">{alert_rows}</div>
       <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
@@ -866,7 +861,7 @@ def render_html(data) -> str:
   </div>
 
   <!-- TIMESERIES + EVENT TYPES + ACTORS -->
-  <div class="grid-3">
+  <div class="grid-2">
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">📈 30-Day Event Trend</div>
@@ -882,14 +877,6 @@ def render_html(data) -> str:
         <div class="panel-title">🔖 Incident Type Breakdown</div>
       </div>
       <div class="et-wrap">{et_rows}</div>
-    </div>
-
-    <div class="panel">
-      <div class="panel-head">
-        <div class="panel-title">⚔️ Most Active Non-State Actors</div>
-        <div class="panel-meta">Excludes security forces</div>
-      </div>
-      <div class="actors-wrap">{actor_rows}</div>
     </div>
   </div>
 
