@@ -315,7 +315,7 @@
   <span style="font-size:11px;color:var(--text3);font-family:'Space Mono',monospace;padding:3px 10px;border:1px solid var(--border);border-radius:6px">PHASE 1 · CONFLICT INTELLIGENCE</span>
   <div class="header-meta">
     <div class="live-badge"><div class="live-dot"></div> SAMPLE DATA — DEMONSTRATION MODE</div>
-    <div class="gen-time">Generated 2026-09-23 00:41:33 WAT</div>
+    <div class="gen-time">Generated 2026-09-23 09:16:59 WAT</div>
   </div>
 </header>
 
@@ -395,7 +395,7 @@
         <text x="80" y="41" text-anchor="middle"
               font-size="9" font-weight="600" fill="white" font-family="monospace">N.west</text>
         <text x="80" y="55" text-anchor="middle"
-              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">15.5</text>
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">15.8</text>
         
         <rect x="138" y="10" width="112" height="75" rx="6"
               fill="#FF6B35" fill-opacity="0.42"
@@ -403,15 +403,15 @@
         <text x="194" y="41" text-anchor="middle"
               font-size="9" font-weight="600" fill="white" font-family="monospace">N.east</text>
         <text x="194" y="55" text-anchor="middle"
-              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">19.0</text>
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">18.7</text>
         
         <rect x="50" y="93" width="130" height="70" rx="6"
-              fill="#FFB830" fill-opacity="0.39"
+              fill="#FFB830" fill-opacity="0.40"
               stroke="#FFB830" stroke-opacity="0.6" stroke-width="1.5"/>
         <text x="115" y="122" text-anchor="middle"
               font-size="9" font-weight="600" fill="white" font-family="monospace">N.Central</text>
         <text x="115" y="136" text-anchor="middle"
-              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">14.3</text>
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">15.5</text>
         
         <rect x="10" y="170" width="95" height="75" rx="6"
               fill="#3CB371" fill-opacity="0.38"
@@ -419,7 +419,7 @@
         <text x="57" y="201" text-anchor="middle"
               font-size="9" font-weight="600" fill="white" font-family="monospace">S.West</text>
         <text x="57" y="215" text-anchor="middle"
-              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">12.7</text>
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">12.9</text>
         
         <rect x="112" y="170" width="80" height="75" rx="6"
               fill="#FFD700" fill-opacity="0.38"
@@ -427,7 +427,7 @@
         <text x="152" y="201" text-anchor="middle"
               font-size="9" font-weight="600" fill="white" font-family="monospace">S.S.</text>
         <text x="152" y="215" text-anchor="middle"
-              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">11.6</text>
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">12.3</text>
         
         <rect x="198" y="170" width="54" height="75" rx="6"
               fill="#90EE90" fill-opacity="0.38"
@@ -435,22 +435,17 @@
         <text x="225" y="201" text-anchor="middle"
               font-size="9" font-weight="600" fill="white" font-family="monospace">S.East</text>
         <text x="225" y="215" text-anchor="middle"
-              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">12.3</text>
+              font-size="8" fill="rgba(255,255,255,0.85)" font-family="monospace">12.7</text>
         
       <text x="130" y="252" text-anchor="middle" font-size="8"
             fill="rgba(255,255,255,0.4)" font-family="monospace">Avg. threat score by zone</text>
     </svg></div>
-      <div class="psych-note">
-        <strong>Design note:</strong> Colour intensity scales with threat score, not raw event count.
-        High-fatality low-frequency zones are not underweighted — protecting against
-        "psychic numbing" (Slovic, 2007).
-      </div>
     </div>
 
     <div class="panel">
       <div class="panel-head">
         <div class="panel-title">⚡ Zone Threat Breakdown <span class="panel-badge pb-red">6 ZONES</span></div>
-        <div class="panel-meta">Sorted by risk score</div>
+        <div class="panel-meta">Sorted by risk score · trend shows direction, not severity — see 7-day snapshot below for severity</div>
       </div>
       <div class="zones-wrap">
         <div class="zone-card">
@@ -626,10 +621,6 @@
             <div class="alert-sub">1 incidents this week · 1 fatalities</div>
           </div>
         </div></div>
-      <div class="psych-note" style="margin:0;border-radius:0;border-left:none;border-right:none;border-bottom:none">
-        <strong>Human labels:</strong> Analysts see "Armed confrontation" not "Battles" —
-        clinical distance increases error rate under stress (Klein, 1998).
-      </div>
     </div>
 
     <div class="panel">
@@ -776,10 +767,15 @@
   <!-- ETL AUDIT LOG -->
   <div class="panel">
     <div class="panel-head">
-      <div class="panel-title">✅ Data Freshness &amp; Update Log <span class="panel-badge pb-green">VERIFIED</span></div>
+      <div class="panel-title">🔄 Data Sync Log <span class="panel-badge pb-amber">SYNC STATUS</span></div>
       <div class="panel-meta" style="font-style:italic;color:var(--text3)">When was this data last updated?</div>
     </div>
     <div class="log-wrap">
+        <div class="log-row">
+          <span style="font-size:12px;color:var(--text2)">Last updated: 2026-09-23 at 09:16 WAT</span>
+          <span style="font-size:12px;color:var(--text2)">3 records checked</span>
+          <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
+        </div>
         <div class="log-row">
           <span style="font-size:12px;color:var(--text2)">Last updated: 2026-09-23 at 00:41 WAT</span>
           <span style="font-size:12px;color:var(--text2)">3 records checked</span>
@@ -789,18 +785,7 @@
           <span style="font-size:12px;color:var(--text2)">Last updated: 2026-09-20 at 17:31 WAT</span>
           <span style="font-size:12px;color:var(--text2)">3 records checked</span>
           <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
-        </div>
-        <div class="log-row">
-          <span style="font-size:12px;color:var(--text2)">Last updated: 2026-09-20 at 17:10 WAT</span>
-          <span style="font-size:12px;color:var(--text2)">3 records checked</span>
-          <span style="color:#4CAF50;font-size:12px;font-weight:600">✓ Updated successfully</span>
         </div></div>
-    <div class="psych-note" style="margin:12px 18px;border-radius:8px">
-      <strong>Why transparency matters:</strong> Displaying the pipeline audit log to analysts
-      builds appropriate trust in the data — neither over-reliance nor dismissal.
-      Automation bias (Parasuraman & Manzey, 2010) is reduced when humans can see
-      how the intelligence was produced.
-    </div>
   </div>
 
 </main>
