@@ -46,12 +46,22 @@ def load_data():
     # Deliberately does not select actor1, notes, admin1, or exact event_date:
     # ACLED compliance requires the public display to be transformative and
     # not reconstructable to their underlying event-level records.
+    #
+    # IMPORTANT: filters on real elapsed time (julianday('now') vs the
+    # actual event_date), NOT the stored days_ago column. days_ago was
+    # frozen at whatever value the synthetic generator set once — it
+    # never updates as real time passes. Since ACLED has been paused,
+    # using days_ago here would keep claiming "N incidents this week"
+    # indefinitely for data that's actually weeks old, directly
+    # contradicting the Zone Threat Breakdown's honest NO_RECENT_DATA
+    # trend (which already compares against real dates). Both panels
+    # must use the same real-time basis or they'll keep disagreeing.
     recent_activity = [dict(r) for r in conn.execute("""
         SELECT zone, severity_level,
                COUNT(*) as event_count,
                SUM(fatalities) as fatalities
         FROM conflict_events
-        WHERE days_ago <= 7
+        WHERE julianday('now') - julianday(substr(event_date, 1, 10)) <= 7
         GROUP BY zone, severity_level
         ORDER BY
             CASE severity_level
@@ -68,13 +78,14 @@ def load_data():
         ORDER BY avg_threat_score DESC
     """).fetchall()]
 
-    # Time series: events per day last 30 days
+    # Time series: events per day, last 30 REAL days (see note above —
+    # same fix applied here; days_ago would silently go stale the same way).
     timeseries = [dict(r) for r in conn.execute("""
         SELECT event_date, COUNT(*) as count,
                SUM(fatalities) as fatalities,
                SUM(CASE WHEN severity_level='CRITICAL' THEN 1 ELSE 0 END) as critical
         FROM conflict_events
-        WHERE days_ago <= 30
+        WHERE julianday('now') - julianday(substr(event_date, 1, 10)) <= 30
         GROUP BY event_date
         ORDER BY event_date
     """).fetchall()]
@@ -256,9 +267,16 @@ def build_nigeria_map_svg(zones_data):
 
 
 def build_timeseries_svg(timeseries):
-    """Sparkline chart of daily events over last 30 days."""
+    """Sparkline chart of daily events over last 30 real days."""
     if not timeseries:
-        return ""
+        # Honest empty state instead of a silently blank chart area —
+        # same reasoning as the Recent Activity Snapshot fix: since
+        # ACLED is paused, real recent data can be genuinely empty,
+        # and that should read as "no data," not as "broken."
+        return """<div style="padding:24px 8px;color:var(--text3);font-size:12px;text-align:center;">
+          No events recorded in the last 30 real days.<br>
+          <span style="font-size:11px;opacity:0.8;">Reflects the ACLED pause — chart will resume once live data is restored.</span>
+        </div>"""
     counts = [t["count"] for t in timeseries]
     crits = [t["critical"] for t in timeseries]
     dates = [t["event_date"][:10] for t in timeseries]
@@ -386,10 +404,11 @@ def render_html(data) -> str:
     # No actor names, no notes, no exact dates, no per-incident location:
     # this is a transformed summary, not a reconstruction of individual
     # ACLED records.
-    alert_rows = ""
-    for r in recent_activity:
-        col = severity_color.get(r["severity_level"], "#666")
-        alert_rows += f"""
+    if recent_activity:
+        alert_rows = ""
+        for r in recent_activity:
+            col = severity_color.get(r["severity_level"], "#666")
+            alert_rows += f"""
         <div class="alert-row" data-severity="{r['severity_level']}">
           <div class="sev-pill" style="background:{col}22;color:{col};border-color:{col}44">
             {r['severity_level']}
@@ -398,6 +417,16 @@ def render_html(data) -> str:
             <div class="alert-title">{r['zone']}</div>
             <div class="alert-sub">{r['event_count']} incidents this week · {r['fatalities']} fatalities</div>
           </div>
+        </div>"""
+    else:
+        # Honest empty state — matches the Zone Threat Breakdown's
+        # NO_RECENT_DATA trend rather than showing a blank area that
+        # looks broken (this exact confusion cost real debugging time
+        # earlier in this project).
+        alert_rows = """
+        <div style="padding:20px 18px;color:var(--text3);font-size:12px;text-align:center;">
+          No incidents recorded in the last 7 real days.<br>
+          <span style="font-size:11px;opacity:0.8;">This reflects the pause in live ACLED data — not necessarily calm conditions.</span>
         </div>"""
 
     # Build state rows
