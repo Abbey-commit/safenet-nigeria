@@ -1,0 +1,12 @@
+# Secrets — never commit real credentials. .env.example stays public
+# as the template; .env holds real local values and must never be tracked.
+.env
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
+
+# OS
+.DS_Store
